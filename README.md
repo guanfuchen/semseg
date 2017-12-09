@@ -28,7 +28,7 @@
 ---
 ### 数据
 
-- CamVid
+- CamVid，参考[camvid_dataset](doc/camvid_dataset.md)
 - ...
 
 ---
