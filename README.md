@@ -6,6 +6,7 @@
 这个仓库旨在实现常用的语义分割算法，主要参考如下：
 - [pytorch-semseg](https://github.com/meetshah1995/pytorch-semseg)
 - [Semantic Segmentation using Fully Convolutional Networks over the years](https://meetshah1995.github.io/semantic-segmentation/deep-learning/pytorch/visdom/2017/06/01/semantic-segmentation-over-the-years.html#sec_datasets)
+- [Fully Convolutional Networks for Semantic Segmentation](doc/fcn_understanding.md)
 
 ---
 ### 网络实现
