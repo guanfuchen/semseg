@@ -18,7 +18,8 @@ class camvidLoader(data.Dataset):
         self.mean = np.array([104.00699, 116.66877, 122.67892])
         self.n_classes = 13
         self.files = collections.defaultdict(list)
-        
+
+        file_list = os.listdir(root + '/' + split)
         self.files[split] = file_list
 
     def __len__(self):
