@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 import time
+
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-
 # fcn32s模型
+from semseg.loss import cross_entropy2d
+
+
 class fcn32s(nn.Module):
     def forward(self, x):
         conv1 = self.conv1_block(x)
@@ -88,9 +92,12 @@ if __name__ == '__main__':
     n_classes = 21
     model = fcn32s(n_classes=n_classes)
     x = Variable(torch.randn(1, 3, 360, 480))
-    print(x.shape)
+    y = Variable(torch.LongTensor(np.random.rand(1, 1, 360, 480)))
+    # print(x.shape)
     start = time.time()
     pred = model(x)
     end = time.time()
     print(end-start)
-    print(pred.shape)
+    # print(pred.shape)
+    loss = cross_entropy2d(pred, y)
+    # print(loss)

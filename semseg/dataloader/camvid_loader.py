@@ -1,16 +1,14 @@
+# -*- coding: utf-8 -*-
 import os
 import collections
 import torch
-import torchvision
 import numpy as np
 import scipy.misc as m
 import matplotlib.pyplot as plt
-
 from torch.utils import data
 
-
 class camvidLoader(data.Dataset):
-    def __init__(self, root, split="train", is_transform=False, img_size=None):
+    def __init__(self, root, split="train", is_transform=False):
         self.root = root
         self.split = split
         self.img_size = [360, 480]
@@ -47,7 +45,7 @@ class camvidLoader(data.Dataset):
         img = img.astype(np.float64)
         img -= self.mean
         img = img.astype(float) / 255.0
-        # NHWC -> NCHW
+        # HWC -> CHW
         img = img.transpose(2, 0, 1)
 
         img = torch.from_numpy(img).float()
@@ -91,16 +89,18 @@ class camvidLoader(data.Dataset):
             return rgb
 
 if __name__ == '__main__':
-    local_path = '/home/cgf/Data/CamVid'
-    dst = camvidLoader(local_path, is_transform=True)
+    HOME_PATH = os.path.expanduser('~')
+    local_path = os.path.join(HOME_PATH, 'Data/CamVid')
+    dst = camvidLoader(local_path, is_transform=False)
     trainloader = data.DataLoader(dst, batch_size=4)
-    for i, data in enumerate(trainloader):
-        imgs, labels = data
-        #  if i == 0:
-            #  img = torchvision.utils.make_grid(imgs).numpy()
-            #  img = np.transpose(img, (1, 2, 0))
-            #  img = img[:, :, ::-1]
-            #  plt.imshow(img)
-            #  plt.show()
-            #  plt.imshow(dst.decode_segmap(labels.numpy()[i]))
-            #  plt.show()
+    for i, (imgs, labels) in enumerate(trainloader):
+        print(i)
+        print(imgs.shape)
+        print(labels.shape)
+        if i == 0:
+            img = imgs[0, :, :, :]
+            plt.subplot(121)
+            plt.imshow(img)
+            plt.subplot(122)
+            plt.imshow(dst.decode_segmap(labels.numpy()[i]))
+            plt.show()
