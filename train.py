@@ -19,8 +19,8 @@ def train():
     for epoch in range(20000):
         for i, (imgs, labels) in enumerate(trainloader):
             print(i)
-            print(labels.shape)
-            print(imgs.shape)
+            #  print(labels.shape)
+            #  print(imgs.shape)
             labels = labels[np.newaxis, :]
             imgs = Variable(imgs)
             labels = Variable(labels)
@@ -28,6 +28,7 @@ def train():
             optimizer.zero_grad()
 
             loss = cross_entropy2d(pred, labels)
+            print('loss:', loss)
             loss.backward()
 
             optimizer.step()
