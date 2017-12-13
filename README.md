@@ -12,6 +12,7 @@
 ### 网络实现
 
 - FCN
+- RefineNet，参考[refinenet_understanging](doc/refinenet_understanging.md)
 - ...
 
 ---
