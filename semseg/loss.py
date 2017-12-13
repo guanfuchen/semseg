@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import torch.nn.functional as F
 
 def cross_entropy2d(input, target, weight=None, size_average=True):

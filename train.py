@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import torch
 import os
 
@@ -21,7 +22,6 @@ def train():
             print(i)
             #  print(labels.shape)
             #  print(imgs.shape)
-            labels = labels[np.newaxis, :]
             imgs = Variable(imgs)
             labels = Variable(labels)
             pred = model(imgs)
