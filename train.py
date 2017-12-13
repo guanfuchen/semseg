@@ -13,7 +13,7 @@ def train():
     HOME_PATH = os.path.expanduser('~')
     local_path = os.path.join(HOME_PATH, 'Data/CamVid')
     dst = camvidLoader(local_path, is_transform=True)
-    trainloader = torch.utils.data.DataLoader(dst, batch_size=4)
+    trainloader = torch.utils.data.DataLoader(dst, batch_size=1)
     model = fcn32s(n_classes=dst.n_classes)
     optimizer = torch.optim.SGD(model.parameters(), lr=1e-5, momentum=0.99, weight_decay=5e-4)
     for epoch in range(20000):

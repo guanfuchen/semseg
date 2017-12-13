@@ -65,7 +65,7 @@ def main():
     pred = model(x)
     g = make_dot(pred)
     # print(g)
-    # g.render('model_vis.gv', view=True)
+    g.render('model_vis.gv', view=True)
 
 
 if __name__ == '__main__':
