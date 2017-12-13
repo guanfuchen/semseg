@@ -16,12 +16,13 @@ def train():
     dst = camvidLoader(local_path, is_transform=True)
     trainloader = torch.utils.data.DataLoader(dst, batch_size=1)
     model = fcn32s(n_classes=dst.n_classes)
+    model.init_vgg16()
     optimizer = torch.optim.SGD(model.parameters(), lr=1e-5, momentum=0.99, weight_decay=5e-4)
     for epoch in range(20000):
         for i, (imgs, labels) in enumerate(trainloader):
             print(i)
-            #  print(labels.shape)
-            #  print(imgs.shape)
+            # print(labels.shape)
+            # print(imgs.shape)
             imgs = Variable(imgs)
             labels = Variable(labels)
             pred = model(imgs)
