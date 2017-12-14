@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import torch
 import os
+import argparse
 
 import numpy as np
 from torch.autograd import Variable
@@ -10,15 +11,26 @@ from semseg.loss import cross_entropy2d
 from semseg.modelloader.fcn import fcn32s
 
 
-def train():
+def train(args):
     HOME_PATH = os.path.expanduser('~')
     local_path = os.path.join(HOME_PATH, 'Data/CamVid')
     dst = camvidLoader(local_path, is_transform=True)
     trainloader = torch.utils.data.DataLoader(dst, batch_size=1)
-    model = fcn32s(n_classes=dst.n_classes)
-    model.init_vgg16()
+
+    start_epoch = 0
+    if args.resume_model != '':
+        model = torch.load(args.resume_model)
+        start_epoch_id1 = args.resume_model.rfind('_')
+        start_epoch_id2 = args.resume_model.rfind('.')
+        start_epoch = int(args.resume_model[start_epoch_id1+1:start_epoch_id2])
+    else:
+        model = fcn32s(n_classes=dst.n_classes)
+        if args.init_vgg16:
+            model.init_vgg16()
+
+    print('start_epoch:', start_epoch)
     optimizer = torch.optim.SGD(model.parameters(), lr=1e-5, momentum=0.99, weight_decay=5e-4)
-    for epoch in range(20000):
+    for epoch in range(start_epoch, 20000, 1):
         for i, (imgs, labels) in enumerate(trainloader):
             print(i)
             # print(labels.shape)
@@ -33,11 +45,20 @@ def train():
             loss.backward()
 
             optimizer.step()
-        torch.save(model, 'fcn32s_camvid_{}.pkl'.format(epoch))
+        if args.save_model:
+            torch.save(model, 'fcn32s_camvid_{}.pkl'.format(epoch))
 
 
-
+# best training: python train.py --resume_model fcn32s_camvid_9.pkl --save_model True --init_vgg16 True
 if __name__=='__main__':
     print('train----in----')
-    train()
+    parser = argparse.ArgumentParser(description='training parameter setting')
+    parser.add_argument('--resume_model', type=str, default='', help='resume model path [ fcn32s_camvid_9.pkl ]')
+    parser.add_argument('--save_model', type=bool, default=False, help='save model [ False ]')
+    parser.add_argument('--init_vgg16', type=bool, default=False, help='init model using vgg16 weights [ False ]')
+    args = parser.parse_args()
+    # print(args.resume_model)
+    # print(args.save_model)
+    print(args)
+    train(args)
     print('train----out----')
