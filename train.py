@@ -4,6 +4,7 @@ import os
 import argparse
 
 import numpy as np
+import visdom
 from torch.autograd import Variable
 
 from semseg.dataloader.camvid_loader import camvidLoader
@@ -12,6 +13,7 @@ from semseg.modelloader.fcn import fcn32s
 
 
 def train(args):
+    vis = visdom.Visdom()
     if args.dataset_path == '':
         HOME_PATH = os.path.expanduser('~')
         local_path = os.path.join(HOME_PATH, 'Data/CamVid')
@@ -38,12 +40,26 @@ def train(args):
             print(i)
             # print(labels.shape)
             # print(imgs.shape)
+
+
             imgs = Variable(imgs)
             labels = Variable(labels)
-            pred = model(imgs)
-            optimizer.zero_grad()
 
-            loss = cross_entropy2d(pred, labels)
+            outputs = model(imgs)
+
+            if args.vis and i%50==0:
+                pred_labels = outputs.data.max(1)[1].numpy()
+                # print(pred_labels.shape)
+                label_color = dst.decode_segmap(labels.data.numpy()[0]).transpose(2, 0, 1)
+                # print(label_color.shape)
+                pred_label_color = dst.decode_segmap(pred_labels[0]).transpose(2, 0, 1)
+                # print(pred_label_color.shape)
+                vis.image(label_color, win='label_color')
+                vis.image(pred_label_color, win='pred_label_color')
+
+
+            optimizer.zero_grad()
+            loss = cross_entropy2d(outputs, labels)
             print('loss:', loss)
             loss.backward()
 
@@ -52,7 +68,8 @@ def train(args):
             torch.save(model, 'fcn32s_camvid_{}.pkl'.format(epoch))
 
 
-# best training: python train.py --resume_model fcn32s_camvid_9.pkl --save_model True --init_vgg16 True --dataset_path /home/cgf/Data/CamVid
+# best training: python train.py --resume_model fcn32s_camvid_9.pkl --save_model True
+# --init_vgg16 True --dataset_path /home/cgf/Data/CamVid --batch_size 1 --vis True
 if __name__=='__main__':
     print('train----in----')
     parser = argparse.ArgumentParser(description='training parameter setting')
@@ -61,6 +78,7 @@ if __name__=='__main__':
     parser.add_argument('--init_vgg16', type=bool, default=False, help='init model using vgg16 weights [ False ]')
     parser.add_argument('--dataset_path', type=str, default='', help='train dataset path [ /home/cgf/Data/CamVid ]')
     parser.add_argument('--batch_size', type=int, default=1, help='train dataset batch size [ 1 ]')
+    parser.add_argument('--vis', type=bool, default=False, help='visualize the training results [ False ]')
     args = parser.parse_args()
     # print(args.resume_model)
     # print(args.save_model)

@@ -100,7 +100,7 @@ if __name__ == '__main__':
         if i == 0:
             img = imgs[0, :, :, :]
             plt.subplot(121)
-            plt.imshow(img)
+            plt.imshow(img.numpy())
             plt.subplot(122)
-            plt.imshow(dst.decode_segmap(labels.numpy()[i]))
+            plt.imshow(dst.decode_segmap(labels.numpy()[0]))
             plt.show()

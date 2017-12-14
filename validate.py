@@ -29,8 +29,8 @@ def validate():
         outputs = model(imgs)
         # 取axis=1中的最大值，outputs的shape为batch_size*n_classes*height*width，
         # 获取max后，返回两个数组，分别是最大值和相应的索引值，这里取索引值为label
-        pred = outputs.data.max(1)[1].cpu().numpy()
-        gt = labels.data.cpu().numpy()
+        pred = outputs.data.max(1)[1].numpy()
+        gt = labels.data.numpy()
         for gt_, pred_ in zip(gt, pred):
             gts.append(gt_)
             preds.append(pred_)
