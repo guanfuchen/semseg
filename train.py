@@ -12,8 +12,11 @@ from semseg.modelloader.fcn import fcn32s
 
 
 def train(args):
-    HOME_PATH = os.path.expanduser('~')
-    local_path = os.path.join(HOME_PATH, 'Data/CamVid')
+    if args.dataset_path == '':
+        HOME_PATH = os.path.expanduser('~')
+        local_path = os.path.join(HOME_PATH, 'Data/CamVid')
+    else:
+        local_path = args.dataset_path
     dst = camvidLoader(local_path, is_transform=True)
     trainloader = torch.utils.data.DataLoader(dst, batch_size=1)
 
@@ -49,13 +52,14 @@ def train(args):
             torch.save(model, 'fcn32s_camvid_{}.pkl'.format(epoch))
 
 
-# best training: python train.py --resume_model fcn32s_camvid_9.pkl --save_model True --init_vgg16 True
+# best training: python train.py --resume_model fcn32s_camvid_9.pkl --save_model True --init_vgg16 True --dataset_path /home/cgf/Data/CamVid
 if __name__=='__main__':
     print('train----in----')
     parser = argparse.ArgumentParser(description='training parameter setting')
     parser.add_argument('--resume_model', type=str, default='', help='resume model path [ fcn32s_camvid_9.pkl ]')
     parser.add_argument('--save_model', type=bool, default=False, help='save model [ False ]')
     parser.add_argument('--init_vgg16', type=bool, default=False, help='init model using vgg16 weights [ False ]')
+    parser.add_argument('--dataset_path', type=str, default='', help='train dataset path [ /home/cgf/Data/CamVid ]')
     args = parser.parse_args()
     # print(args.resume_model)
     # print(args.save_model)
