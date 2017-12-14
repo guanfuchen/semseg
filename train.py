@@ -18,7 +18,7 @@ def train(args):
     else:
         local_path = args.dataset_path
     dst = camvidLoader(local_path, is_transform=True)
-    trainloader = torch.utils.data.DataLoader(dst, batch_size=1)
+    trainloader = torch.utils.data.DataLoader(dst, batch_size=args.batch_size)
 
     start_epoch = 0
     if args.resume_model != '':
@@ -60,6 +60,7 @@ if __name__=='__main__':
     parser.add_argument('--save_model', type=bool, default=False, help='save model [ False ]')
     parser.add_argument('--init_vgg16', type=bool, default=False, help='init model using vgg16 weights [ False ]')
     parser.add_argument('--dataset_path', type=str, default='', help='train dataset path [ /home/cgf/Data/CamVid ]')
+    parser.add_argument('--batch_size', type=int, default=1, help='train dataset batch size [ 1 ]')
     args = parser.parse_args()
     # print(args.resume_model)
     # print(args.save_model)
