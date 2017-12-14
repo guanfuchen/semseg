@@ -123,8 +123,8 @@ class fcn32s(nn.Module):
         l1 = self.classifier[6]
         l2 = vgg16_classifier[6]
         if isinstance(l1, nn.Conv2d) and isinstance(l2, nn.Linear):
-            l1.weight.data = l2.weight.data[:n_classes, :].view(l1.weight.size())
-            l1.bias.data = l2.bias.data[:n_classes].view(l1.bias.size())
+            l1.weight.data = l2.weight.data[:self.n_classes, :].view(l1.weight.size())
+            l1.bias.data = l2.bias.data[:self.n_classes].view(l1.bias.size())
 
 if __name__ == '__main__':
     n_classes = 21
