@@ -9,6 +9,7 @@ from torch.autograd import Variable
 
 from semseg.dataloader.camvid_loader import camvidLoader
 from semseg.loss import cross_entropy2d
+from semseg.modelloader.duc_hdc import ResNetDUC
 from semseg.modelloader.fcn import fcn32s
 
 
@@ -29,9 +30,10 @@ def train(args):
         start_epoch_id2 = args.resume_model.rfind('.')
         start_epoch = int(args.resume_model[start_epoch_id1+1:start_epoch_id2])
     else:
-        model = fcn32s(n_classes=dst.n_classes)
-        if args.init_vgg16:
-            model.init_vgg16()
+        if args.structure == 'fcn32s':
+            model = fcn32s(n_classes=dst.n_classes, pretrained=args.init_vgg16)
+        elif args.structure == 'ResNetDUC':
+            model = ResNetDUC(n_classes=dst.n_classes, pretrained=args.init_vgg16)
 
     print('start_epoch:', start_epoch)
     optimizer = torch.optim.SGD(model.parameters(), lr=1e-5, momentum=0.99, weight_decay=5e-4)
@@ -58,6 +60,8 @@ def train(args):
                 vis.image(pred_label_color, win='pred_label_color')
 
 
+            # print(outputs.size())
+            # print(labels.size())
             optimizer.zero_grad()
             loss = cross_entropy2d(outputs, labels)
             print('loss:', loss)
@@ -73,6 +77,7 @@ def train(args):
 if __name__=='__main__':
     print('train----in----')
     parser = argparse.ArgumentParser(description='training parameter setting')
+    parser.add_argument('--structure', type=str, default='fcn32s', help='use the net structure to segment [ fcn32s ResNetDUC ]')
     parser.add_argument('--resume_model', type=str, default='', help='resume model path [ fcn32s_camvid_9.pkl ]')
     parser.add_argument('--save_model', type=bool, default=False, help='save model [ False ]')
     parser.add_argument('--init_vgg16', type=bool, default=False, help='init model using vgg16 weights [ False ]')

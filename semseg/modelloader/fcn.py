@@ -23,7 +23,7 @@ class fcn32s(nn.Module):
         out = F.upsample_bilinear(score, x.size()[2:])
         return out
 
-    def __init__(self, n_classes=21):
+    def __init__(self, n_classes=21, pretrained=False):
         super(fcn32s, self).__init__()
         self.n_classes = n_classes
 
@@ -89,6 +89,9 @@ class fcn32s(nn.Module):
             nn.Conv2d(4096, self.n_classes, 1),
         )
 
+        if pretrained:
+            self.init_vgg16()
+
     def init_vgg16(self):
         vgg16 = models.vgg16(pretrained=True)
 
@@ -128,7 +131,7 @@ class fcn32s(nn.Module):
 
 if __name__ == '__main__':
     n_classes = 21
-    model = fcn32s(n_classes=n_classes)
+    model = fcn32s(n_classes=n_classes, pretrained=False)
     # model.init_vgg16()
     x = Variable(torch.randn(1, 3, 360, 480))
     y = Variable(torch.LongTensor(np.ones((1, 360, 480), dtype=np.int)))
