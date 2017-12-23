@@ -69,7 +69,7 @@ def train(args):
 
             optimizer.step()
         if args.save_model:
-            torch.save(model, 'fcn32s_camvid_{}.pkl'.format(epoch))
+            torch.save(model, '{}_camvid_{}.pkl'.format(args.structure, epoch))
 
 
 # best training: python train.py --resume_model fcn32s_camvid_9.pkl --save_model True
