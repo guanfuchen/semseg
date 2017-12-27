@@ -28,8 +28,8 @@ class segnet(nn.Module):
         self.up2 = segnetUp2(128, 64)
         self.up1 = segnetUp2(64, n_classes)
 
-        if pretrained:
-            self.init_vgg16()
+        # if pretrained:
+        #     self.init_vgg16()
 
     def forward(self, x):
         x, pool_indices1, unpool_shape1 = self.down1(x)
