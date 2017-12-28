@@ -80,7 +80,7 @@ def train(args):
                 win_res = vis.line(X=np.ones(1)*i, Y=loss.data.numpy(), win=win, update='append')
                 if win_res != win:
                     vis.line(X=np.ones(1)*i, Y=loss.data.numpy(), win=win)
-        if args.save_model:
+        if args.save_model and epoch%args.save_epoch==0:
             torch.save(model, '{}_camvid_{}.pkl'.format(args.structure, epoch))
 
 
@@ -92,6 +92,7 @@ if __name__=='__main__':
     parser.add_argument('--structure', type=str, default='fcn32s', help='use the net structure to segment [ fcn32s ResNetDUC ]')
     parser.add_argument('--resume_model', type=str, default='', help='resume model path [ fcn32s_camvid_9.pkl ]')
     parser.add_argument('--save_model', type=bool, default=False, help='save model [ False ]')
+    parser.add_argument('--save_epoch', type=int, default=1, help='save model after epoch [ 1 ]')
     parser.add_argument('--init_vgg16', type=bool, default=False, help='init model using vgg16 weights [ False ]')
     parser.add_argument('--dataset_path', type=str, default='', help='train dataset path [ /home/cgf/Data/CamVid ]')
     parser.add_argument('--batch_size', type=int, default=1, help='train dataset batch size [ 1 ]')
