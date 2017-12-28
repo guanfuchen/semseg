@@ -10,6 +10,7 @@ from torch.autograd import Variable
 from semseg.dataloader.camvid_loader import camvidLoader
 from semseg.loss import cross_entropy2d
 from semseg.modelloader.duc_hdc import ResNetDUC
+from semseg.modelloader.enet import ENet
 from semseg.modelloader.fcn import fcn32s
 from semseg.modelloader.segnet import segnet
 
@@ -37,6 +38,8 @@ def train(args):
             model = ResNetDUC(n_classes=dst.n_classes, pretrained=args.init_vgg16)
         elif args.structure == 'segnet':
             model = segnet(n_classes=dst.n_classes, pretrained=args.init_vgg16)
+        elif args.structure == 'ENet':
+            model = ENet(n_classes=dst.n_classes, pretrained=args.init_vgg16)
 
     print('start_epoch:', start_epoch)
     optimizer = torch.optim.SGD(model.parameters(), lr=1e-5, momentum=0.99, weight_decay=5e-4)
@@ -67,7 +70,7 @@ def train(args):
             # print(labels.size())
             optimizer.zero_grad()
             loss = cross_entropy2d(outputs, labels)
-            print('loss:', loss)
+            print('loss:', loss.data.numpy()[0])
             loss.backward()
 
             optimizer.step()
