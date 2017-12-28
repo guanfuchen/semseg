@@ -53,6 +53,7 @@
 **可视化**
 
 [visdom](https://github.com/facebookresearch/visdom)
+[开发相关问题](doc/visdom_problem.md)
 
 ```bash
 # 在tmux或者另一个终端中开启可视化服务器visdom

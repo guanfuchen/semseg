@@ -74,6 +74,12 @@ def train(args):
             loss.backward()
 
             optimizer.step()
+
+            if args.vis:
+                win = 'loss'
+                win_res = vis.line(X=np.ones(1)*i, Y=loss.data.numpy(), win=win, update='append')
+                if win_res != win:
+                    vis.line(X=np.ones(1)*i, Y=loss.data.numpy(), win=win)
         if args.save_model:
             torch.save(model, '{}_camvid_{}.pkl'.format(args.structure, epoch))
 
