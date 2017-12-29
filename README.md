@@ -8,6 +8,7 @@
 - [Semantic Segmentation using Fully Convolutional Networks over the years](https://meetshah1995.github.io/semantic-segmentation/deep-learning/pytorch/visdom/2017/06/01/semantic-segmentation-over-the-years.html#sec_datasets)
 - [Fully Convolutional Networks for Semantic Segmentation](doc/fcn_understanding.md)
 - [dataset_loaders](https://github.com/fvisin/dataset_loaders) 实现了主要的数据集的加载，包括视频，图像
+- [semantic-segmentation-pytorch](https://github.com/hangzhaomit/semantic-segmentation-pytorch) ade20k数据集常用模型评估，其中具有caffe，pytorch和torch代码的实现
 
 ---
 ### 网络实现
@@ -23,6 +24,7 @@
 - CamVid
 - PASCAL VOC
 - CityScapes
+- ADE20K，参考[ade20k数据集相关](doc/ade20k_dataset.md)
 - ...
 
 ---
