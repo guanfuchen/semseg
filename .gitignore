@@ -2,3 +2,4 @@
 model_vis.gv
 model_vis.gv.pdf
 *.pkl
+*.pyc

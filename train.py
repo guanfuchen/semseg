@@ -9,6 +9,7 @@ from torch.autograd import Variable
 
 from semseg.dataloader.camvid_loader import camvidLoader
 from semseg.loss import cross_entropy2d
+from semseg.modelloader.drn import drn_d_22, DRNSeg
 from semseg.modelloader.duc_hdc import ResNetDUC
 from semseg.modelloader.enet import ENet
 from semseg.modelloader.fcn import fcn32s
@@ -40,15 +41,16 @@ def train(args):
             model = segnet(n_classes=dst.n_classes, pretrained=args.init_vgg16)
         elif args.structure == 'ENet':
             model = ENet(n_classes=dst.n_classes, pretrained=args.init_vgg16)
+        elif args.structure == 'drn_d_22':
+            model = DRNSeg(model_name='drn_d_22', n_classes=dst.n_classes, pretrained=args.init_vgg16)
 
     print('start_epoch:', start_epoch)
-    optimizer = torch.optim.SGD(model.parameters(), lr=1e-5, momentum=0.99, weight_decay=5e-4)
+    optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr, momentum=0.99, weight_decay=5e-4)
     for epoch in range(start_epoch+1, 20000, 1):
         for i, (imgs, labels) in enumerate(trainloader):
             print(i)
             # print(labels.shape)
             # print(imgs.shape)
-
 
             imgs = Variable(imgs)
             labels = Variable(labels)
@@ -89,13 +91,14 @@ def train(args):
 if __name__=='__main__':
     print('train----in----')
     parser = argparse.ArgumentParser(description='training parameter setting')
-    parser.add_argument('--structure', type=str, default='fcn32s', help='use the net structure to segment [ fcn32s ResNetDUC ]')
+    parser.add_argument('--structure', type=str, default='fcn32s', help='use the net structure to segment [ fcn32s ResNetDUC segnet ENet drn_d_22 ]')
     parser.add_argument('--resume_model', type=str, default='', help='resume model path [ fcn32s_camvid_9.pkl ]')
     parser.add_argument('--save_model', type=bool, default=False, help='save model [ False ]')
     parser.add_argument('--save_epoch', type=int, default=1, help='save model after epoch [ 1 ]')
     parser.add_argument('--init_vgg16', type=bool, default=False, help='init model using vgg16 weights [ False ]')
     parser.add_argument('--dataset_path', type=str, default='', help='train dataset path [ /home/cgf/Data/CamVid ]')
     parser.add_argument('--batch_size', type=int, default=1, help='train dataset batch size [ 1 ]')
+    parser.add_argument('--lr', type=float, default=1e-5, help='train learning rate [ 0.01 ]')
     parser.add_argument('--vis', type=bool, default=False, help='visualize the training results [ False ]')
     args = parser.parse_args()
     # print(args.resume_model)
