@@ -6,6 +6,7 @@ import collections
 import torch
 import scipy.misc as m
 import matplotlib.pyplot as plt
+from PIL import Image
 from torch.utils import data
 import glob
 import numpy as np
@@ -38,10 +39,10 @@ class ade20kLoader(data.Dataset):
         # print('img_path:', img_path)
         # print('lbl_path:', lbl_path)
 
-        img = m.imread(img_path)
+        img = Image.open(img_path)
         img = np.array(img, dtype=np.uint8)
 
-        lbl = m.imread(lbl_path)
+        lbl = Image.open(lbl_path)
         lbl = np.array(lbl, dtype=np.int32)
 
         if self.is_transform:
@@ -108,8 +109,8 @@ if __name__ == '__main__':
         # print(imgs.shape)
         # print(labels.shape)
         if i == 0:
-            imgs = imgs.numpy()
             img = imgs[0, :, :, :]
+            img = img.numpy()
             # print(img.shape)
             img = np.transpose(img, (1, 2, 0))
             plt.subplot(121)

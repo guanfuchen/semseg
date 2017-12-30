@@ -1,14 +1,18 @@
 # -*- coding: utf-8 -*-
 import os
 import collections
+import random
+
 import torch
 import numpy as np
 import scipy.misc as m
 import matplotlib.pyplot as plt
+from PIL import Image
 from torch.utils import data
+from torchvision import transforms
 
 class camvidLoader(data.Dataset):
-    def __init__(self, root, split="train", is_transform=False):
+    def __init__(self, root, split="train", is_transform=False, is_augment=False):
         self.root = root
         self.split = split
         self.img_size = [360, 480]
@@ -16,6 +20,20 @@ class camvidLoader(data.Dataset):
         self.mean = np.array([104.00699, 116.66877, 122.67892])
         self.n_classes = 13
         self.files = collections.defaultdict(list)
+        self.image_augment_transform = None
+        self.label_augment_transform = None
+        self.is_augment = is_augment
+        if self.is_augment:
+            self.image_augment_transform = transforms.Compose([
+                transforms.RandomHorizontalFlip(),
+                transforms.RandomRotation(degrees=(0, 360))
+                # transforms.ToTensor()
+            ])
+            self.label_augment_transform = transforms.Compose([
+                transforms.RandomHorizontalFlip(),
+                transforms.RandomRotation(degrees=(0, 360))
+                # transforms.ToTensor()
+            ])
 
         file_list = os.listdir(root + '/' + split)
         self.files[split] = file_list
@@ -28,10 +46,18 @@ class camvidLoader(data.Dataset):
         img_path = self.root + '/' + self.split + '/' + img_name
         lbl_path = self.root + '/' + self.split + 'annot/' + img_name
 
-        img = m.imread(img_path)
-        img = np.array(img, dtype=np.uint8)
+        img = Image.open(img_path)
+        lbl = Image.open(lbl_path)
 
-        lbl = m.imread(lbl_path)
+        if self.is_augment:
+            seed = np.random.randint(2147483647)
+            random.seed(seed)
+            img = self.image_augment_transform(img)
+            random.seed(seed)
+            lbl = self.label_augment_transform(lbl)
+            # lbl = torch.ByteTensor(np.array(lbl))
+
+        img = np.array(img, dtype=np.uint8)
         lbl = np.array(lbl, dtype=np.int32)
 
         if self.is_transform:
@@ -91,16 +117,21 @@ class camvidLoader(data.Dataset):
 if __name__ == '__main__':
     HOME_PATH = os.path.expanduser('~')
     local_path = os.path.join(HOME_PATH, 'Data/CamVid')
-    dst = camvidLoader(local_path, is_transform=False)
-    trainloader = data.DataLoader(dst, batch_size=4)
+    batch_size = 4
+    dst = camvidLoader(local_path, is_transform=True, is_augment=True)
+    trainloader = data.DataLoader(dst, batch_size=batch_size)
     for i, (imgs, labels) in enumerate(trainloader):
         print(i)
         print(imgs.shape)
         print(labels.shape)
-        if i == 0:
-            img = imgs[0, :, :, :]
-            plt.subplot(121)
-            plt.imshow(img.numpy())
-            plt.subplot(122)
+        # if i == 0:
+        image_list_len = imgs.shape[0]
+        for image_list in range(image_list_len):
+            img = imgs[image_list, :, :, :]
+            img = img.numpy()
+            img = np.transpose(img, (1, 2, 0))
+            plt.subplot(image_list_len, 2, 2 * image_list + 1)
+            plt.imshow(img)
+            plt.subplot(image_list_len, 2, 2 * image_list + 2)
             plt.imshow(dst.decode_segmap(labels.numpy()[0]))
-            plt.show()
+        plt.show()
