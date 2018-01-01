@@ -24,48 +24,48 @@ def validate(args):
     dst = camvidLoader(local_path, is_transform=True, split='val')
     valloader = torch.utils.data.DataLoader(dst, batch_size=1)
 
-    if os.path.isfile(args.validate_model):
-        if args.resume_model != '':
-            model = torch.load(args.validate_model)
-        else:
-            if args.structure == 'fcn32s':
-                model = fcn(module_type='32s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
-            elif args.structure == 'ResNetDUC':
-                model = ResNetDUC(n_classes=dst.n_classes, pretrained=args.init_vgg16)
-            elif args.structure == 'segnet':
-                model = segnet(n_classes=dst.n_classes, pretrained=args.init_vgg16)
-            elif args.structure == 'ENet':
-                model = ENet(n_classes=dst.n_classes, pretrained=args.init_vgg16)
-            elif args.structure == 'drn_d_22':
-                model = DRNSeg(model_name='drn_d_22', n_classes=dst.n_classes, pretrained=args.init_vgg16)
-            model.load_state_dict(torch.load(args.resume_model_state_dict))
-        model.eval()
-
-        gts, preds = [], []
-        for i, (imgs, labels) in enumerate(valloader):
-            print(i)
-            #  print(labels.shape)
-            #  print(imgs.shape)
-            # 将np变量转换为pytorch中的变量
-            imgs = Variable(imgs)
-            labels = Variable(labels)
-
-            outputs = model(imgs)
-            # 取axis=1中的最大值，outputs的shape为batch_size*n_classes*height*width，
-            # 获取max后，返回两个数组，分别是最大值和相应的索引值，这里取索引值为label
-            pred = outputs.data.max(1)[1].numpy()
-            gt = labels.data.numpy()
-            for gt_, pred_ in zip(gt, pred):
-                gts.append(gt_)
-                preds.append(pred_)
-        score, class_iou = scores(gts, preds, n_class=dst.n_classes)
-        for k, v in score.items():
-            print(k, v)
-
-        for i in range(dst.n_classes):
-            print(i, class_iou[i])
+    # if os.path.isfile(args.validate_model):
+    if args.validate_model != '':
+        model = torch.load(args.validate_model)
     else:
-        print(args.validate_model, ' not exists')
+        if args.structure == 'fcn32s':
+            model = fcn(module_type='32s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
+        elif args.structure == 'ResNetDUC':
+            model = ResNetDUC(n_classes=dst.n_classes, pretrained=args.init_vgg16)
+        elif args.structure == 'segnet':
+            model = segnet(n_classes=dst.n_classes, pretrained=args.init_vgg16)
+        elif args.structure == 'ENet':
+            model = ENet(n_classes=dst.n_classes, pretrained=args.init_vgg16)
+        elif args.structure == 'drn_d_22':
+            model = DRNSeg(model_name='drn_d_22', n_classes=dst.n_classes, pretrained=args.init_vgg16)
+        model.load_state_dict(torch.load(args.resume_model_state_dict))
+    model.eval()
+
+    gts, preds = [], []
+    for i, (imgs, labels) in enumerate(valloader):
+        print(i)
+        #  print(labels.shape)
+        #  print(imgs.shape)
+        # 将np变量转换为pytorch中的变量
+        imgs = Variable(imgs)
+        labels = Variable(labels)
+
+        outputs = model(imgs)
+        # 取axis=1中的最大值，outputs的shape为batch_size*n_classes*height*width，
+        # 获取max后，返回两个数组，分别是最大值和相应的索引值，这里取索引值为label
+        pred = outputs.data.max(1)[1].numpy()
+        gt = labels.data.numpy()
+        for gt_, pred_ in zip(gt, pred):
+            gts.append(gt_)
+            preds.append(pred_)
+    score, class_iou = scores(gts, preds, n_class=dst.n_classes)
+    for k, v in score.items():
+        print(k, v)
+
+    for i in range(dst.n_classes):
+        print(i, class_iou[i])
+    # else:
+    #     print(args.validate_model, ' not exists')
 
 if __name__=='__main__':
     # print('validate----in----')
