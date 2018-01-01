@@ -12,7 +12,7 @@ from semseg.loss import cross_entropy2d
 from semseg.modelloader.drn import drn_d_22, DRNSeg
 from semseg.modelloader.duc_hdc import ResNetDUC
 from semseg.modelloader.enet import ENet
-from semseg.modelloader.fcn import fcn32s
+from semseg.modelloader.fcn import fcn
 from semseg.modelloader.segnet import segnet
 
 
@@ -34,7 +34,7 @@ def train(args):
         start_epoch = int(args.resume_model[start_epoch_id1+1:start_epoch_id2])
     else:
         if args.structure == 'fcn32s':
-            model = fcn32s(n_classes=dst.n_classes, pretrained=args.init_vgg16)
+            model = fcn(module_type='32s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
         elif args.structure == 'ResNetDUC':
             model = ResNetDUC(n_classes=dst.n_classes, pretrained=args.init_vgg16)
         elif args.structure == 'segnet':

@@ -12,7 +12,7 @@ from torchvision import models
 from semseg.loss import cross_entropy2d
 
 
-class fcn32s(nn.Module):
+class fcn(nn.Module):
     def forward(self, x):
         conv1 = self.conv1_block(x)
         conv2 = self.conv2_block(conv1)
@@ -20,12 +20,31 @@ class fcn32s(nn.Module):
         conv4 = self.conv4_block(conv3)
         conv5 = self.conv5_block(conv4)
         score = self.classifier(conv5)
+
+        if self.module_type=='16s' or self.module_type=='8s':
+            score_pool4 = self.score_pool4(conv4)
+        if self.module_type=='8s':
+            score_pool3 = self.score_pool3(conv3)
+        # print(conv1.data.size())
+        # print(conv2.data.size())
+        # print(conv4.data.size())
+        # print(conv5.data.size())
+        # print(score.data.size())
+        # print(x.data.size())
+        if self.module_type=='16s' or self.module_type=='8s':
+            score = F.upsample_bilinear(score, score_pool4.size()[2:])
+            score += score_pool4
+        if self.module_type=='8s':
+            score = F.upsample_bilinear(score, score_pool3.size()[2:])
+            score += score_pool3
+
         out = F.upsample_bilinear(score, x.size()[2:])
         return out
 
-    def __init__(self, n_classes=21, pretrained=False):
-        super(fcn32s, self).__init__()
+    def __init__(self, module_type='32s', n_classes=21, pretrained=False):
+        super(fcn, self).__init__()
         self.n_classes = n_classes
+        self.module_type = module_type
 
         # VGG16=2+2+3+3+3+3
         # VGG16网络的第一个模块是两个out_channel=64的卷积块
@@ -89,6 +108,9 @@ class fcn32s(nn.Module):
             nn.Conv2d(4096, self.n_classes, 1),
         )
 
+        self.score_pool4 = nn.Conv2d(512, self.n_classes, 1)
+        self.score_pool3 = nn.Conv2d(256, self.n_classes, 1)
+
         if pretrained:
             self.init_vgg16()
 
@@ -131,15 +153,32 @@ class fcn32s(nn.Module):
 
 if __name__ == '__main__':
     n_classes = 21
-    model = fcn32s(n_classes=n_classes, pretrained=False)
+    model_fcn32s = fcn(module_type='32s', n_classes=n_classes, pretrained=False)
+    model_fcn16s = fcn(module_type='16s', n_classes=n_classes, pretrained=False)
+    model_fcn8s = fcn(module_type='8s', n_classes=n_classes, pretrained=False)
     # model.init_vgg16()
     x = Variable(torch.randn(1, 3, 360, 480))
     y = Variable(torch.LongTensor(np.ones((1, 360, 480), dtype=np.int)))
     # print(x.shape)
+
+    # ---------------------------fcn32s模型运行时间-----------------------
     start = time.time()
-    pred = model(x)
+    pred = model_fcn32s(x)
     end = time.time()
     print(end-start)
+
+    # ---------------------------fcn16s模型运行时间-----------------------
+    start = time.time()
+    pred = model_fcn16s(x)
+    end = time.time()
+    print(end-start)
+
+    # ---------------------------fcn8s模型运行时间-----------------------
+    start = time.time()
+    pred = model_fcn8s(x)
+    end = time.time()
+    print(end-start)
+
     # print(pred.shape)
     loss = cross_entropy2d(pred, y)
     # print(loss)
