@@ -30,12 +30,15 @@ def conv3x3(in_planes, out_planes, stride=1, padding=1, dilation=1):
     return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
                      padding=padding, bias=False, dilation=dilation)
 
+# drn基本构成块
 class BasicBlock(nn.Module):
     expansion = 1
 
     def __init__(self, inplanes, planes, stride=1, downsample=None,
                  dilation=(1, 1), residual=True):
         super(BasicBlock, self).__init__()
+        # dilation默认为(1,1)由两个dilation的卷积模块构成，由于stride=1，dilation为1，kernel为3
+        # 那么相当于kernel为6的卷积核，padding为1
         self.conv1 = conv3x3(inplanes, planes, stride,
                              padding=dilation[0], dilation=dilation[0])
         self.bn1 = nn.BatchNorm2d(planes)
@@ -50,7 +53,9 @@ class BasicBlock(nn.Module):
     def forward(self, x):
         residual = x
 
+        # print(x.data.size())
         out = self.conv1(x)
+        # print(out.data.size())
         out = self.bn1(out)
         out = self.relu(out)
 
@@ -71,12 +76,15 @@ class DRN(nn.Module):
                  channels=(16, 32, 64, 128, 256, 512, 512, 512),
                  out_map=False, out_middle=False, pool_size=28, arch='D'):
         super(DRN, self).__init__()
+        print(layers)
         self.inplanes = channels[0]
         self.out_map = out_map
         self.out_dim = channels[-1]
         self.out_middle = out_middle
+        # 默认架构为arch=D
         self.arch = arch
 
+        # 不同架构主要在构成的网络模块基本组成模块上不同，在C架构上主要由basic block块组成，而其他由conv组成
         if arch == 'C':
             self.conv1 = nn.Conv2d(3, channels[0], kernel_size=7, stride=1,
                                    padding=3, bias=False)
@@ -88,6 +96,7 @@ class DRN(nn.Module):
             self.layer2 = self._make_layer(
                 BasicBlock, channels[1], layers[1], stride=2)
         elif arch == 'D':
+            # -7+2*3/1+1=0将channel为3的rgb原始图像数据转换为channels[0]的数据
             self.layer0 = nn.Sequential(
                 nn.Conv2d(3, channels[0], kernel_size=7, stride=1, padding=3,
                           bias=False),
@@ -125,6 +134,7 @@ class DRN(nn.Module):
             self.avgpool = nn.AvgPool2d(pool_size)
             self.fc = nn.Conv2d(self.out_dim, num_classes, kernel_size=1,
                                 stride=1, padding=0, bias=True)
+        # 网络模块权重和偏置初始化
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
@@ -133,6 +143,7 @@ class DRN(nn.Module):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
+    # 这种构成网络层的方法类似于Residual Neural Network
     def _make_layer(self, block, planes, blocks, stride=1, dilation=1,
                     new_level=True, residual=True):
         assert dilation == 1 or dilation % 2 == 0
@@ -157,8 +168,10 @@ class DRN(nn.Module):
 
         return nn.Sequential(*layers)
 
+    # 创建卷积层，输入通道，卷积个数，stride，dilation等等
     def _make_conv_layers(self, channels, convs, stride=1, dilation=1):
         modules = []
+        # 创建卷积的个数，当stride为2时，即卷积有两层的情况下，输出维度为原来的1／2
         for i in range(convs):
             modules.extend([
                 nn.Conv2d(self.inplanes, channels, kernel_size=3,
@@ -217,6 +230,7 @@ class DRN(nn.Module):
         else:
             return x
 
+# drn变种22
 def drn_d_22(pretrained=False, **kwargs):
     model = DRN(BasicBlock, [1, 1, 2, 2, 2, 2, 1, 1], arch='D', **kwargs)
     if pretrained:
@@ -235,10 +249,12 @@ def fill_up_weights(up):
     for c in range(1, w.size(0)):
         w[c, 0, :, :] = w[0, 0, :, :]
 
+# drn segnet network
 class DRNSeg(nn.Module):
     def __init__(self, model_name, n_classes, pretrained_model=None,
                  pretrained=True, use_torch_up=False):
         super(DRNSeg, self).__init__()
+        # DRN分割模型不同变种
         if model_name=='drn_d_22':
             model = drn_d_22(pretrained=pretrained, num_classes=1000)
         # pmodel = nn.DataParallel(model)
@@ -246,6 +262,7 @@ class DRNSeg(nn.Module):
             # pmodel.load_state_dict(pretrained_model)
         self.base = nn.Sequential(*list(model.children())[:-2])
 
+        # 仅仅在最后一层seg layer上存有bias
         self.seg = nn.Conv2d(model.out_dim, n_classes,
                              kernel_size=1, bias=True)
         self.softmax = nn.LogSoftmax()
@@ -278,6 +295,7 @@ class DRNSeg(nn.Module):
 if __name__ == '__main__':
     n_classes = 21
     model = DRNSeg(model_name='drn_d_22', n_classes=n_classes, pretrained=False)
+    # model.eval()
     # model.init_vgg16()
     x = Variable(torch.randn(1, 3, 360, 480))
     y = Variable(torch.LongTensor(np.ones((1, 360, 480), dtype=np.int)))

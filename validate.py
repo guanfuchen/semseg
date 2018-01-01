@@ -11,8 +11,11 @@ from semseg.metrics import scores
 
 
 def validate(args):
-    HOME_PATH = os.path.expanduser('~')
-    local_path = os.path.join(HOME_PATH, 'Data/CamVid')
+    if args.dataset_path == '':
+        HOME_PATH = os.path.expanduser('~')
+        local_path = os.path.join(HOME_PATH, 'Data/CamVid')
+    else:
+        local_path = args.dataset_path
     dst = camvidLoader(local_path, is_transform=True, split='val')
     valloader = torch.utils.data.DataLoader(dst, batch_size=1)
 
@@ -47,7 +50,7 @@ def validate(args):
         print(args.validate_model, ' not exists')
 
 if __name__=='__main__':
-    print('validate----in----')
+    # print('validate----in----')
     parser = argparse.ArgumentParser(description='training parameter setting')
     parser.add_argument('--validate_model', type=str, default='', help='validate model path [ fcn32s_camvid_9.pkl ]')
     parser.add_argument('--dataset_path', type=str, default='', help='train dataset path [ /home/cgf/Data/CamVid ]')
@@ -57,4 +60,4 @@ if __name__=='__main__':
     # print(args.save_model)
     print(args)
     validate(args)
-    print('validate----out----')
+    # print('validate----out----')

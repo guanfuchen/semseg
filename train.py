@@ -89,7 +89,7 @@ def train(args):
 # best training: python train.py --resume_model fcn32s_camvid_9.pkl --save_model True
 # --init_vgg16 True --dataset_path /home/cgf/Data/CamVid --batch_size 1 --vis True
 if __name__=='__main__':
-    print('train----in----')
+    # print('train----in----')
     parser = argparse.ArgumentParser(description='training parameter setting')
     parser.add_argument('--structure', type=str, default='fcn32s', help='use the net structure to segment [ fcn32s ResNetDUC segnet ENet drn_d_22 ]')
     parser.add_argument('--resume_model', type=str, default='', help='resume model path [ fcn32s_camvid_9.pkl ]')
@@ -105,4 +105,4 @@ if __name__=='__main__':
     # print(args.save_model)
     print(args)
     train(args)
-    print('train----out----')
+    # print('train----out----')
