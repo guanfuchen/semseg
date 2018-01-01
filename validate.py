@@ -29,15 +29,15 @@ def validate(args):
         model = torch.load(args.validate_model)
     else:
         if args.structure == 'fcn32s':
-            model = fcn(module_type='32s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
+            model = fcn(module_type='32s', n_classes=dst.n_classes)
         elif args.structure == 'ResNetDUC':
-            model = ResNetDUC(n_classes=dst.n_classes, pretrained=args.init_vgg16)
+            model = ResNetDUC(n_classes=dst.n_classes)
         elif args.structure == 'segnet':
-            model = segnet(n_classes=dst.n_classes, pretrained=args.init_vgg16)
+            model = segnet(n_classes=dst.n_classes)
         elif args.structure == 'ENet':
-            model = ENet(n_classes=dst.n_classes, pretrained=args.init_vgg16)
+            model = ENet(n_classes=dst.n_classes)
         elif args.structure == 'drn_d_22':
-            model = DRNSeg(model_name='drn_d_22', n_classes=dst.n_classes, pretrained=args.init_vgg16)
+            model = DRNSeg(model_name='drn_d_22', n_classes=dst.n_classes)
         model.load_state_dict(torch.load(args.resume_model_state_dict))
     model.eval()
 
