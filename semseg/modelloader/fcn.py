@@ -108,8 +108,10 @@ class fcn(nn.Module):
             nn.Conv2d(4096, self.n_classes, 1),
         )
 
-        self.score_pool4 = nn.Conv2d(512, self.n_classes, 1)
-        self.score_pool3 = nn.Conv2d(256, self.n_classes, 1)
+        if self.module_type=='16s' or self.module_type=='8s':
+            self.score_pool4 = nn.Conv2d(512, self.n_classes, 1)
+        if self.module_type=='8s':
+            self.score_pool3 = nn.Conv2d(256, self.n_classes, 1)
 
         if pretrained:
             self.init_vgg16()

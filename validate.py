@@ -8,6 +8,11 @@ from torch.autograd import Variable
 
 from semseg.dataloader.camvid_loader import camvidLoader
 from semseg.metrics import scores
+from semseg.modelloader.drn import DRNSeg
+from semseg.modelloader.duc_hdc import ResNetDUC
+from semseg.modelloader.enet import ENet
+from semseg.modelloader.fcn import fcn
+from semseg.modelloader.segnet import segnet
 
 
 def validate(args):
@@ -20,7 +25,20 @@ def validate(args):
     valloader = torch.utils.data.DataLoader(dst, batch_size=1)
 
     if os.path.isfile(args.validate_model):
-        model = torch.load(args.validate_model)
+        if args.resume_model != '':
+            model = torch.load(args.validate_model)
+        else:
+            if args.structure == 'fcn32s':
+                model = fcn(module_type='32s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
+            elif args.structure == 'ResNetDUC':
+                model = ResNetDUC(n_classes=dst.n_classes, pretrained=args.init_vgg16)
+            elif args.structure == 'segnet':
+                model = segnet(n_classes=dst.n_classes, pretrained=args.init_vgg16)
+            elif args.structure == 'ENet':
+                model = ENet(n_classes=dst.n_classes, pretrained=args.init_vgg16)
+            elif args.structure == 'drn_d_22':
+                model = DRNSeg(model_name='drn_d_22', n_classes=dst.n_classes, pretrained=args.init_vgg16)
+            model.load_state_dict(torch.load(args.resume_model_state_dict))
         model.eval()
 
         gts, preds = [], []
@@ -52,7 +70,9 @@ def validate(args):
 if __name__=='__main__':
     # print('validate----in----')
     parser = argparse.ArgumentParser(description='training parameter setting')
+    parser.add_argument('--structure', type=str, default='fcn32s', help='use the net structure to segment [ fcn32s ResNetDUC segnet ENet drn_d_22 ]')
     parser.add_argument('--validate_model', type=str, default='', help='validate model path [ fcn32s_camvid_9.pkl ]')
+    parser.add_argument('--validate_model_state_dict', type=str, default='', help='validate model state dict path [ fcn32s_camvid_9.pt ]')
     parser.add_argument('--dataset_path', type=str, default='', help='train dataset path [ /home/cgf/Data/CamVid ]')
     parser.add_argument('--vis', type=bool, default=False, help='visualize the training results [ False ]')
     args = parser.parse_args()

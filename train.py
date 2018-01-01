@@ -43,6 +43,7 @@ def train(args):
             model = ENet(n_classes=dst.n_classes, pretrained=args.init_vgg16)
         elif args.structure == 'drn_d_22':
             model = DRNSeg(model_name='drn_d_22', n_classes=dst.n_classes, pretrained=args.init_vgg16)
+        model.load_state_dict(torch.load(args.resume_model_state_dict))
 
     print('start_epoch:', start_epoch)
     optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr, momentum=0.99, weight_decay=5e-4)
@@ -83,7 +84,7 @@ def train(args):
                 if win_res != win:
                     vis.line(X=np.ones(1)*i, Y=loss.data.numpy(), win=win)
         if args.save_model and epoch%args.save_epoch==0:
-            torch.save(model, '{}_camvid_{}.pkl'.format(args.structure, epoch))
+            torch.save(model.state_dict(), '{}_camvid_{}.pt'.format(args.structure, epoch))
 
 
 # best training: python train.py --resume_model fcn32s_camvid_9.pkl --save_model True
@@ -93,6 +94,7 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser(description='training parameter setting')
     parser.add_argument('--structure', type=str, default='fcn32s', help='use the net structure to segment [ fcn32s ResNetDUC segnet ENet drn_d_22 ]')
     parser.add_argument('--resume_model', type=str, default='', help='resume model path [ fcn32s_camvid_9.pkl ]')
+    parser.add_argument('--resume_model_state_dict', type=str, default='', help='resume model state dict path [ fcn32s_camvid_9.pt ]')
     parser.add_argument('--save_model', type=bool, default=False, help='save model [ False ]')
     parser.add_argument('--save_epoch', type=int, default=1, help='save model after epoch [ 1 ]')
     parser.add_argument('--init_vgg16', type=bool, default=False, help='init model using vgg16 weights [ False ]')
