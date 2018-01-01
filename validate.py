@@ -38,7 +38,7 @@ def validate(args):
             model = ENet(n_classes=dst.n_classes)
         elif args.structure == 'drn_d_22':
             model = DRNSeg(model_name='drn_d_22', n_classes=dst.n_classes)
-        model.load_state_dict(torch.load(args.resume_model_state_dict))
+        model.load_state_dict(torch.load(args.validate_model_state_dict))
     model.eval()
 
     gts, preds = [], []
