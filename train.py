@@ -23,7 +23,7 @@ def train(args):
         local_path = os.path.join(HOME_PATH, 'Data/CamVid')
     else:
         local_path = args.dataset_path
-    dst = camvidLoader(local_path, is_transform=True)
+    dst = camvidLoader(local_path, is_transform=True, is_augment=args.data_augment)
     trainloader = torch.utils.data.DataLoader(dst, batch_size=args.batch_size)
 
     start_epoch = 0
@@ -47,7 +47,14 @@ def train(args):
             model = ENet(n_classes=dst.n_classes, pretrained=args.init_vgg16)
         elif args.structure == 'drn_d_22':
             model = DRNSeg(model_name='drn_d_22', n_classes=dst.n_classes, pretrained=args.init_vgg16)
-        model.load_state_dict(torch.load(args.resume_model_state_dict))
+        if args.resume_model_state_dict != '':
+            try:
+                # fcn32s、fcn16s和fcn8s模型略有增加参数，互相赋值重新训练过程中会有KeyError，暂时捕捉异常处理
+                model.load_state_dict(torch.load(args.resume_model_state_dict))
+            except KeyError:
+                print('missing key')
+
+
 
     print('start_epoch:', start_epoch)
     optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr, momentum=0.99, weight_decay=5e-4)
@@ -103,6 +110,7 @@ if __name__=='__main__':
     parser.add_argument('--save_epoch', type=int, default=1, help='save model after epoch [ 1 ]')
     parser.add_argument('--init_vgg16', type=bool, default=False, help='init model using vgg16 weights [ False ]')
     parser.add_argument('--dataset_path', type=str, default='', help='train dataset path [ /home/cgf/Data/CamVid ]')
+    parser.add_argument('--data_augment', type=bool, default=False, help='enlarge the training data [ False ]')
     parser.add_argument('--batch_size', type=int, default=1, help='train dataset batch size [ 1 ]')
     parser.add_argument('--lr', type=float, default=1e-5, help='train learning rate [ 0.01 ]')
     parser.add_argument('--vis', type=bool, default=False, help='visualize the training results [ False ]')

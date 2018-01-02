@@ -11,6 +11,9 @@ from PIL import Image
 from torch.utils import data
 from torchvision import transforms
 
+from semseg.dataloader.utils import Compose, RandomHorizontallyFlip, RandomRotate
+
+
 class camvidLoader(data.Dataset):
     def __init__(self, root, split="train", is_transform=False, is_augment=False):
         self.root = root
@@ -20,18 +23,12 @@ class camvidLoader(data.Dataset):
         self.mean = np.array([104.00699, 116.66877, 122.67892])
         self.n_classes = 13
         self.files = collections.defaultdict(list)
-        self.image_augment_transform = None
-        self.label_augment_transform = None
+        self.joint_augment_transform = None
         self.is_augment = is_augment
         if self.is_augment:
-            self.image_augment_transform = transforms.Compose([
-                transforms.RandomHorizontalFlip(),
-                transforms.RandomRotation(degrees=(0, 360))
-                # transforms.ToTensor()
-            ])
-            self.label_augment_transform = transforms.Compose([
-                transforms.RandomHorizontalFlip(),
-                transforms.RandomRotation(degrees=(0, 360))
+            self.joint_augment_transform = Compose([
+                RandomHorizontallyFlip(),
+                RandomRotate(degree=360)
                 # transforms.ToTensor()
             ])
 
@@ -50,12 +47,8 @@ class camvidLoader(data.Dataset):
         lbl = Image.open(lbl_path)
 
         if self.is_augment:
-            seed = np.random.randint(2147483647)
-            random.seed(seed)
-            img = self.image_augment_transform(img)
-            random.seed(seed)
-            lbl = self.label_augment_transform(lbl)
-            # lbl = torch.ByteTensor(np.array(lbl))
+            if self.joint_augment_transform is not None:
+                img, lbl = self.joint_augment_transform(img, lbl)
 
         img = np.array(img, dtype=np.uint8)
         lbl = np.array(lbl, dtype=np.int32)
@@ -133,5 +126,5 @@ if __name__ == '__main__':
             plt.subplot(image_list_len, 2, 2 * image_list + 1)
             plt.imshow(img)
             plt.subplot(image_list_len, 2, 2 * image_list + 2)
-            plt.imshow(dst.decode_segmap(labels.numpy()[0]))
+            plt.imshow(dst.decode_segmap(labels.numpy()[image_list]))
         plt.show()
