@@ -34,6 +34,7 @@
 
 - [imgaug](https://github.com/aleju/imgaug)
 - [Augmentor](https://github.com/mdbloice/Augmentor)
+- [joint_transforms.py](https://github.com/ZijunDeng/pytorch-semantic-segmentation/blob/master/utils/joint_transforms.py) 使用这个脚本实现数据集增加
 
 ---
 ### 依赖

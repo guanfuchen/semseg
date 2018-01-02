@@ -28,7 +28,7 @@ class camvidLoader(data.Dataset):
         if self.is_augment:
             self.joint_augment_transform = Compose([
                 RandomHorizontallyFlip(),
-                RandomRotate(degree=360)
+                # RandomRotate(degree=360)
                 # transforms.ToTensor()
             ])
 
@@ -127,4 +127,5 @@ if __name__ == '__main__':
             plt.imshow(img)
             plt.subplot(image_list_len, 2, 2 * image_list + 2)
             plt.imshow(dst.decode_segmap(labels.numpy()[image_list]))
+            # print(dst.decode_segmap(labels.numpy()[image_list])[0, 0, :])
         plt.show()

@@ -65,6 +65,7 @@ class CenterCrop(object):
 class RandomHorizontallyFlip(object):
     def __call__(self, img, mask):
         if random.random() < 0.5:
+            print('RandomHorizontallyFlip')
             return img.transpose(Image.FLIP_LEFT_RIGHT), mask.transpose(Image.FLIP_LEFT_RIGHT)
         return img, mask
 
