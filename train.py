@@ -68,6 +68,8 @@ def train(args):
         loss_epoch = 0
         loss_avg_epoch = 0
         data_count = 0
+        # if args.vis:
+        #     vis.text('epoch:{}'.format(epoch), win='epoch')
         for i, (imgs, labels) in enumerate(trainloader):
             print(i)
             data_count = i
@@ -86,32 +88,44 @@ def train(args):
                 # print(label_color.shape)
                 pred_label_color = dst.decode_segmap(pred_labels[0]).transpose(2, 0, 1)
                 # print(pred_label_color.shape)
-                vis.image(label_color, win='label_color')
-                vis.image(pred_label_color, win='pred_label_color')
+                win = 'label_color'
+                vis.image(label_color, win=win)
+                win = 'pred_label_color'
+                vis.image(pred_label_color, win=win)
 
 
             # print(outputs.size())
             # print(labels.size())
             optimizer.zero_grad()
             loss = cross_entropy2d(outputs, labels)
-            loss_epoch += loss
-            print('loss:', loss.data.numpy()[0])
+            loss_numpy = loss.data.numpy()
+            loss_epoch += loss_numpy
+            print('loss:', loss_numpy)
             loss.backward()
 
             optimizer.step()
 
+            # 显示一个周期的loss曲线
             if args.vis:
                 win = 'loss'
                 win_res = vis.line(X=np.ones(1)*i, Y=loss.data.numpy(), win=win, update='append')
                 if win_res != win:
                     vis.line(X=np.ones(1)*i, Y=loss.data.numpy(), win=win)
 
+        # 关闭清空一个周期的loss
+        if args.vis:
+            win = 'loss'
+            vis.close(win)
+
+        # 显示多个周期的loss曲线
         loss_avg_epoch = loss_epoch / (data_count * 1.0)
+        # print(loss_avg_epoch)
         if args.vis:
             win = 'loss_epoch'
             win_res = vis.line(X=np.ones(1)*epoch, Y=loss_avg_epoch, win=win, update='append')
             if win_res != win:
                 vis.line(X=np.ones(1)*epoch, Y=loss_avg_epoch, win=win)
+
         if args.save_model and epoch%args.save_epoch==0:
             torch.save(model.state_dict(), '{}_camvid_{}.pt'.format(args.structure, epoch))
 
