@@ -12,6 +12,7 @@ from semseg.loss import cross_entropy2d
 from semseg.modelloader.drn import drn_d_22, DRNSeg
 from semseg.modelloader.duc_hdc import ResNetDUC
 from semseg.modelloader.enet import ENet
+from semseg.modelloader.erfnet import erfnet
 from semseg.modelloader.fcn import fcn
 from semseg.modelloader.pspnet import pspnet
 from semseg.modelloader.segnet import segnet
@@ -48,8 +49,10 @@ def train(args):
             model = ENet(n_classes=dst.n_classes, pretrained=args.init_vgg16)
         elif args.structure == 'drn_d_22':
             model = DRNSeg(model_name='drn_d_22', n_classes=dst.n_classes, pretrained=args.init_vgg16)
-        elif args.structure == 'drn_d_22':
+        elif args.structure == 'pspnet':
             model = pspnet(n_classes=dst.n_classes, pretrained=args.init_vgg16, use_aux=False)
+        elif args.structure == 'erfnet':
+            model = erfnet(n_classes=dst.n_classes)
         if args.resume_model_state_dict != '':
             try:
                 # fcn32s、fcn16s和fcn8s模型略有增加参数，互相赋值重新训练过程中会有KeyError，暂时捕捉异常处理
