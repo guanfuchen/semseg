@@ -13,9 +13,13 @@
 ---
 ### 网络实现
 
-- FCN
+- FCN，参考[fcn_understanding](doc/fcn_understanding.md)
 - RefineNet，参考[refinenet_understanging](doc/refinenet_understanging.md)
 - DUC，参考[duc_understanding](doc/duc_understanding.md)
+- DRN
+- PSPNet
+- ENet
+- EefNet
 - ...
 
 ---

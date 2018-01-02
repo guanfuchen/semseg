@@ -65,8 +65,12 @@ def train(args):
     print('start_epoch:', start_epoch)
     optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr, momentum=0.99, weight_decay=5e-4)
     for epoch in range(start_epoch+1, 20000, 1):
+        loss_epoch = 0
+        loss_avg_epoch = 0
+        data_count = 0
         for i, (imgs, labels) in enumerate(trainloader):
             print(i)
+            data_count = i
             # print(labels.shape)
             # print(imgs.shape)
 
@@ -90,6 +94,7 @@ def train(args):
             # print(labels.size())
             optimizer.zero_grad()
             loss = cross_entropy2d(outputs, labels)
+            loss_epoch += loss
             print('loss:', loss.data.numpy()[0])
             loss.backward()
 
@@ -100,6 +105,13 @@ def train(args):
                 win_res = vis.line(X=np.ones(1)*i, Y=loss.data.numpy(), win=win, update='append')
                 if win_res != win:
                     vis.line(X=np.ones(1)*i, Y=loss.data.numpy(), win=win)
+
+        loss_avg_epoch = loss_epoch / (data_count * 1.0)
+        if args.vis:
+            win = 'loss_epoch'
+            win_res = vis.line(X=np.ones(1)*epoch, Y=loss_avg_epoch, win=win, update='append')
+            if win_res != win:
+                vis.line(X=np.ones(1)*epoch, Y=loss_avg_epoch, win=win)
         if args.save_model and epoch%args.save_epoch==0:
             torch.save(model.state_dict(), '{}_camvid_{}.pt'.format(args.structure, epoch))
 
