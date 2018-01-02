@@ -35,6 +35,10 @@ def train(args):
     else:
         if args.structure == 'fcn32s':
             model = fcn(module_type='32s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
+        elif args.structure == 'fcn16s':
+            model = fcn(module_type='16s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
+        elif args.structure == 'fcn8s':
+            model = fcn(module_type='8s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
         elif args.structure == 'ResNetDUC':
             model = ResNetDUC(n_classes=dst.n_classes, pretrained=args.init_vgg16)
         elif args.structure == 'segnet':
