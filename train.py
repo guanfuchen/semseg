@@ -19,7 +19,8 @@ from semseg.modelloader.segnet import segnet
 
 
 def train(args):
-    vis = visdom.Visdom()
+    if args.vis:
+        vis = visdom.Visdom()
     if args.dataset_path == '':
         HOME_PATH = os.path.expanduser('~')
         local_path = os.path.join(HOME_PATH, 'Data/CamVid')

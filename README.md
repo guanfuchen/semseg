@@ -17,7 +17,7 @@
 - RefineNet，参考[refinenet_understanging](doc/refinenet_understanging.md)
 - DUC，参考[duc_understanding](doc/duc_understanding.md)
 - DRN
-- PSPNet
+- PSPNet，参考[pspnet_understanding](doc/pspnet_understanding.md)
 - ENet
 - EefNet
 - ...

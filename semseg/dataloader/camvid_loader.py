@@ -28,7 +28,7 @@ class camvidLoader(data.Dataset):
         if self.is_augment:
             self.joint_augment_transform = Compose([
                 RandomHorizontallyFlip(),
-                # RandomRotate(degree=360)
+                RandomRotate(degree=90)
                 # transforms.ToTensor()
             ])
 

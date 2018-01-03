@@ -35,9 +35,9 @@ class _PyramidPoolingModule(nn.Module):
         out = torch.cat(out, 1)
         return out
 
-class pspnet(nn.Module):
+class pspnet2(nn.Module):
     def __init__(self, n_classes, pretrained=False, use_aux=True):
-        super(pspnet, self).__init__()
+        super(pspnet2, self).__init__()
         self.use_aux = use_aux
         resnet = models.resnet101(pretrained=pretrained)
         self.layer0 = nn.Sequential(resnet.conv1, resnet.bn1, resnet.relu, resnet.maxpool)
@@ -145,13 +145,13 @@ class PSPNetDeform(nn.Module):
 
 if __name__ == '__main__':
     n_classes = 21
-    model = pspnet(n_classes=n_classes, pretrained=False, use_aux=False)
+    model = pspnet2(n_classes=n_classes, pretrained=False, use_aux=False)
     # model.init_vgg16()
     x = Variable(torch.randn(1, 3, 360, 480))
     y = Variable(torch.LongTensor(np.ones((1, 360, 480), dtype=np.int)))
     # print(x.shape)
 
-    # ---------------------------fcn32s模型运行时间-----------------------
+    # ---------------------------pspnet2模型运行时间-----------------------
     start = time.time()
     pred = model(x)
     end = time.time()

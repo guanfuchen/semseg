@@ -35,6 +35,46 @@ class conv2DBatchNormRelu(nn.Module):
         x = self.cbr_seq(x)
         return x
 
+class unetDown(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super(unetDown, self).__init__()
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=0),
+            nn.BatchNorm2d(num_features=out_channels),
+            nn.ReLU(inplace=True),
+        )
+        self.conv2 = nn.Sequential(
+            nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=0),
+            nn.BatchNorm2d(num_features=out_channels),
+            nn.ReLU(inplace=True),
+        )
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.conv2(x)
+        return x
+
+class unetUp(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super(unetUp, self).__init__()
+        self.upConv = nn.ConvTranspose2d(in_channels=in_channels, out_channels=out_channels, kernel_size=2, stride=2)
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(inplace=True),
+        )
+        self.conv2 = nn.Sequential(
+            nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(inplace=True),
+        )
+
+
+    def forward(self, x_cur, x_prev):
+        x = self.upConv(x_cur)
+        x = torch.cat([F.upsample_bilinear(x_prev, size=x.size()[2:]), x], 1)
+        x = self.conv1(x)
+        x = self.conv2(x)
+        return x
+
 
 class segnetDown2(nn.Module):
     def __init__(self, in_channels, out_channels):
