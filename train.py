@@ -57,6 +57,9 @@ def train(args):
         if args.resume_model_state_dict != '':
             try:
                 # fcn32s、fcn16s和fcn8s模型略有增加参数，互相赋值重新训练过程中会有KeyError，暂时捕捉异常处理
+                start_epoch_id1 = args.resume_model_state_dict.rfind('_')
+                start_epoch_id2 = args.resume_model_state_dict.rfind('.')
+                start_epoch = int(args.resume_model_state_dict[start_epoch_id1 + 1:start_epoch_id2])
                 model.load_state_dict(torch.load(args.resume_model_state_dict))
             except KeyError:
                 print('missing key')
