@@ -251,8 +251,7 @@ def fill_up_weights(up):
 
 # drn segnet network
 class DRNSeg(nn.Module):
-    def __init__(self, model_name, n_classes, pretrained_model=None,
-                 pretrained=True, use_torch_up=False):
+    def __init__(self, model_name, n_classes, pretrained=False, use_torch_up=False):
         super(DRNSeg, self).__init__()
         # DRN分割模型不同变种
         if model_name=='drn_d_22':
