@@ -100,7 +100,9 @@ def train(args):
 
             # print(outputs.size())
             # print(labels.size())
+            # 一次backward后如果不清零，梯度是累加的
             optimizer.zero_grad()
+
             loss = cross_entropy2d(outputs, labels)
             loss_numpy = loss.data.numpy()
             loss_epoch += loss_numpy

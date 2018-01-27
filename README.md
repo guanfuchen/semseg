@@ -19,7 +19,9 @@
 - DRN
 - PSPNet，参考[pspnet_understanding](doc/pspnet_understanding.md)
 - ENet
-- EefNet
+- ErfNet
+- LinkNet，参考[pytorch-linknet](https://github.com/e-lab/pytorch-linknet)
+- FC-DenseNet，参考[fcdensenet_understanding](doc/fcdensenet_understanding.md)
 - ...
 
 ---
@@ -29,6 +31,7 @@
 - PASCAL VOC
 - CityScapes
 - ADE20K，参考[ade20k数据集相关](doc/ade20k_dataset.md)
+- Mapillary Vistas Dataset，参考[Mapillary Vistas Dataset数据集相关](doc/mapillary_vistas_dataset.md)
 - ...
 
 ---

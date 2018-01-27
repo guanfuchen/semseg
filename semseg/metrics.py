@@ -11,6 +11,7 @@ def _fast_hist(label_true, label_pred, n_class):
     return hist
 
 # 评估指标，输入为标签真实值，标签预测值和类个数
+# 输入scores中的数据是[label1, label2, ...] [pred1, pred2, ...]，而且label.shape=(1, height, weight)，pred.shape=(1, height, weight)
 def scores(label_trues, label_preds, n_class):
     """Returns accuracy score evaluation result.
       - overall accuracy

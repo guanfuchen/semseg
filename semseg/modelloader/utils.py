@@ -23,10 +23,10 @@ class conv2DBatchNorm(nn.Module):
         return outputs
 
 class conv2DBatchNormRelu(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, stride, padding, bias=True):
+    def __init__(self, in_channels, out_channels, kernel_size, stride, padding, bias=True, dilation=1):
         super(conv2DBatchNormRelu, self).__init__()
         self.cbr_seq = nn.Sequential(
-            nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias),
+            nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias, dilation=dilation),
             nn.BatchNorm2d(num_features=out_channels),
             nn.ReLU(inplace=True)
         )
@@ -200,40 +200,87 @@ class deconv2DBatchNormRelu(nn.Module):
         outputs = self.dcbr_unit(inputs)
         return outputs
 
-# just a try, not recommend to use
-class Conv2dDeformable(nn.Module):
-    def __init__(self, regular_filter, cuda=True):
-        super(Conv2dDeformable, self).__init__()
-        assert isinstance(regular_filter, nn.Conv2d)
-        self.regular_filter = regular_filter
-        self.offset_filter = nn.Conv2d(regular_filter.in_channels, 2 * regular_filter.in_channels, kernel_size=3,
-                                       padding=1, bias=False)
-        self.offset_filter.weight.data.normal_(0, 0.0005)
-        self.input_shape = None
-        self.grid_w = None
-        self.grid_h = None
-        self.cuda = cuda
+
+class bottleNeckIdentifyPSP(nn.Module):
+    def __init__(self, in_channels, mid_channels, stride, dilation=1):
+        super(bottleNeckIdentifyPSP, self).__init__()
+
+        self.cbr1 = conv2DBatchNormRelu(in_channels, mid_channels, 1, 1, 0, bias=False)
+        if dilation > 1:
+            self.cbr2 = conv2DBatchNormRelu(mid_channels, mid_channels, 3, 1,
+                                            padding=dilation, bias=False,
+                                            dilation=dilation)
+        else:
+            self.cbr2 = conv2DBatchNormRelu(mid_channels, mid_channels, 3,
+                                            stride=1, padding=1,
+                                            bias=False, dilation=1)
+        self.cb3 = conv2DBatchNorm(mid_channels, in_channels, 1, 1, 0)
 
     def forward(self, x):
-        x_shape = x.size()  # (b, c, h, w)
-        offset = self.offset_filter(x)  # (b, 2*c, h, w)
-        offset_w, offset_h = torch.split(offset, self.regular_filter.in_channels, 1)  # (b, c, h, w)
-        offset_w = offset_w.contiguous().view(-1, int(x_shape[2]), int(x_shape[3]))  # (b*c, h, w)
-        offset_h = offset_h.contiguous().view(-1, int(x_shape[2]), int(x_shape[3]))  # (b*c, h, w)
-        if not self.input_shape or self.input_shape != x_shape:
-            self.input_shape = x_shape
-            grid_w, grid_h = np.meshgrid(np.linspace(-1, 1, x_shape[3]), np.linspace(-1, 1, x_shape[2]))  # (h, w)
-            grid_w = torch.Tensor(grid_w)
-            grid_h = torch.Tensor(grid_h)
-            if self.cuda:
-                grid_w = grid_w.cuda()
-                grid_h = grid_h.cuda()
-            self.grid_w = nn.Parameter(grid_w)
-            self.grid_h = nn.Parameter(grid_h)
-        offset_w = offset_w + self.grid_w  # (b*c, h, w)
-        offset_h = offset_h + self.grid_h  # (b*c, h, w)
-        x = x.contiguous().view(-1, int(x_shape[2]), int(x_shape[3])).unsqueeze(1)  # (b*c, 1, h, w)
-        x = F.grid_sample(x, torch.stack((offset_h, offset_w), 3))  # (b*c, h, w)
-        x = x.contiguous().view(-1, int(x_shape[1]), int(x_shape[2]), int(x_shape[3]))  # (b, c, h, w)
-        x = self.regular_filter(x)
-        return x
+        residual = x
+        x = self.cb3(self.cbr2(self.cbr1(x)))
+        return F.relu(x + residual, inplace=True)
+
+class bottleNeckPSP(nn.Module):
+    def __init__(self, in_channels, mid_channels, out_channels,
+                 stride, dilation=1):
+        super(bottleNeckPSP, self).__init__()
+
+        self.cbr1 = conv2DBatchNormRelu(in_channels, mid_channels, 1, 1, 0, bias=False)
+        if dilation > 1:
+            self.cbr2 = conv2DBatchNormRelu(mid_channels, mid_channels, 3, 1,
+                                            padding=dilation, bias=False,
+                                            dilation=dilation)
+        else:
+            self.cbr2 = conv2DBatchNormRelu(mid_channels, mid_channels, 3,
+                                            stride=stride, padding=1,
+                                            bias=False, dilation=1)
+        self.cb3 = conv2DBatchNorm(mid_channels, out_channels, 1, 1, 0)
+        self.cb4 = conv2DBatchNorm(in_channels, out_channels, 1, stride, 0)
+
+    def forward(self, x):
+        conv = self.cb3(self.cbr2(self.cbr1(x)))
+        residual = self.cb4(x)
+        return F.relu(conv + residual, inplace=True)
+
+
+class residualBlockPSP(nn.Module):
+    
+    def __init__(self, n_blocks, in_channels, mid_channels, out_channels, stride, dilation=1):
+        super(residualBlockPSP, self).__init__()
+
+        if dilation > 1:
+            stride = 1
+
+        layers = [bottleNeckPSP(in_channels, mid_channels, out_channels, stride, dilation)]
+        for i in range(n_blocks):
+            layers.append(bottleNeckIdentifyPSP(out_channels, mid_channels, stride, dilation))
+
+        self.layers = nn.Sequential(*layers)
+
+    def forward(self, x):
+        return self.layers(x)
+
+class pyramidPooling(nn.Module):
+
+    def __init__(self, in_channels, pool_sizes):
+        super(pyramidPooling, self).__init__()
+
+        self.paths = []
+        for i in range(len(pool_sizes)):
+            self.paths.append(conv2DBatchNormRelu(in_channels, int(in_channels / len(pool_sizes)), 1, 1, 0, bias=False))
+
+        self.path_module_list = nn.ModuleList(self.paths)
+        self.pool_sizes = pool_sizes
+
+    def forward(self, x):
+        output_slices = [x]
+        h, w = x.view()[2:]
+
+        for module, pool_size in zip(self.path_module_list, self.pool_sizes):
+            out = F.avg_pool2d(x, pool_size, 1, 0)
+            out = module(out)
+            out = F.upsample(out, size=(h,w), mode='bilinear')
+            output_slices.append(out)
+
+        return torch.cat(output_slices, dim=1)

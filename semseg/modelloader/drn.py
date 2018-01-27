@@ -233,8 +233,8 @@ class DRN(nn.Module):
 # drn变种22
 def drn_d_22(pretrained=False, **kwargs):
     model = DRN(BasicBlock, [1, 1, 2, 2, 2, 2, 1, 1], arch='D', **kwargs)
-    if pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['drn-d-22']))
+    # if pretrained:
+    #     model.load_state_dict(model_zoo.load_url(model_urls['drn-d-22']))
     return model
 
 
