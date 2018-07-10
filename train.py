@@ -3,6 +3,8 @@ import torch
 import os
 import argparse
 
+import cv2
+import time
 import numpy as np
 import visdom
 from torch.autograd import Variable
@@ -19,6 +21,7 @@ from semseg.modelloader.segnet import segnet
 
 
 def train(args):
+    init_time = str(int(time.time()))
     if args.vis:
         vis = visdom.Visdom()
     if args.dataset_path == '':
@@ -27,6 +30,7 @@ def train(args):
     else:
         local_path = args.dataset_path
     dst = camvidLoader(local_path, is_transform=True, is_augment=args.data_augment)
+    dst.n_classes = args.n_classes # 保证输入的class
     trainloader = torch.utils.data.DataLoader(dst, batch_size=args.batch_size, shuffle=True)
 
     start_epoch = 0
@@ -60,7 +64,13 @@ def train(args):
                 start_epoch_id1 = args.resume_model_state_dict.rfind('_')
                 start_epoch_id2 = args.resume_model_state_dict.rfind('.')
                 start_epoch = int(args.resume_model_state_dict[start_epoch_id1 + 1:start_epoch_id2])
-                model.load_state_dict(torch.load(args.resume_model_state_dict))
+                pretrained_dict = torch.load(args.resume_model_state_dict)
+                # model_dict = model.state_dict()
+                # for k, v in pretrained_dict.items():
+                #     print(k)
+                # pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
+                # model_dict.update(pretrained_dict)
+                model.load_state_dict(pretrained_dict)
             except KeyError:
                 print('missing key')
 
@@ -96,6 +106,15 @@ def train(args):
                 vis.image(label_color, win=win)
                 win = 'pred_label_color'
                 vis.image(pred_label_color, win=win)
+
+                if epoch < 100:
+                    if not os.path.exists('/tmp/'+init_time):
+                        os.mkdir('/tmp/'+init_time)
+                    time_str = str(int(time.time()))
+                    print('label_color.transpose(2, 0, 1).shape:', label_color.transpose(1, 2, 0).shape)
+                    print('pred_label_color.transpose(2, 0, 1).shape:', pred_label_color.transpose(1, 2, 0).shape)
+                    cv2.imwrite('/tmp/'+init_time+'/'+time_str+'_label.png', label_color.transpose(1, 2, 0))
+                    cv2.imwrite('/tmp/'+init_time+'/'+time_str+'_pred_label.png', pred_label_color.transpose(1, 2, 0))
 
 
             # print(outputs.size())
@@ -133,7 +152,7 @@ def train(args):
                 vis.line(X=np.ones(1)*epoch, Y=loss_avg_epoch, win=win)
 
         if args.save_model and epoch%args.save_epoch==0:
-            torch.save(model.state_dict(), '{}_camvid_{}.pt'.format(args.structure, epoch))
+            torch.save(model.state_dict(), '{}_camvid_class_{}_{}.pt'.format(args.structure, dst.n_classes, epoch))
 
 
 # best training: python train.py --resume_model fcn32s_camvid_9.pkl --save_model True
@@ -150,6 +169,7 @@ if __name__=='__main__':
     parser.add_argument('--dataset_path', type=str, default='', help='train dataset path [ /home/cgf/Data/CamVid ]')
     parser.add_argument('--data_augment', type=bool, default=False, help='enlarge the training data [ False ]')
     parser.add_argument('--batch_size', type=int, default=1, help='train dataset batch size [ 1 ]')
+    parser.add_argument('--n_classes', type=int, default=13, help='train class num [ 13 ]')
     parser.add_argument('--lr', type=float, default=1e-5, help='train learning rate [ 0.01 ]')
     parser.add_argument('--vis', type=bool, default=False, help='visualize the training results [ False ]')
     args = parser.parse_args()

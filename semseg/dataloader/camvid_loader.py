@@ -40,8 +40,12 @@ class camvidLoader(data.Dataset):
 
     def __getitem__(self, index):
         img_name = self.files[self.split][index]
+        img_file_name = img_name[:img_name.rfind('.')]
+        # print(img_file_name)
         img_path = self.root + '/' + self.split + '/' + img_name
         lbl_path = self.root + '/' + self.split + 'annot/' + img_name
+        import glob
+        lbl_path = glob.glob(self.root + '/' + self.split + 'annot/' + img_file_name + '*.png')[0]
 
         img = Image.open(img_path)
         lbl = Image.open(lbl_path)
