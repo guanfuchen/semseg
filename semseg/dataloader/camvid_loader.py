@@ -33,6 +33,7 @@ class camvidLoader(data.Dataset):
             ])
 
         file_list = os.listdir(root + '/' + split)
+        file_list.sort()
         self.files[split] = file_list
 
     def __len__(self):

@@ -9,6 +9,7 @@ import visdom
 from scipy import misc
 from requests import ConnectionError
 import numpy as np
+import time
 
 from semseg.dataloader.camvid_loader import camvidLoader
 from semseg.metrics import scores
@@ -17,9 +18,12 @@ from semseg.modelloader.duc_hdc import ResNetDUC
 from semseg.modelloader.enet import ENet
 from semseg.modelloader.fcn import fcn
 from semseg.modelloader.segnet import segnet
+from semseg.modelloader.erfnet import erfnet
+from semseg.modelloader.pspnet import pspnet
 
 
 def validate(args):
+    init_time = str(int(time.time()))
     if args.vis:
         vis = visdom.Visdom()
     if args.dataset_path == '':
@@ -28,6 +32,7 @@ def validate(args):
     else:
         local_path = args.dataset_path
     dst = camvidLoader(local_path, is_transform=True, split='val')
+    dst.n_classes = args.n_classes  # 保证输入的class
     valloader = torch.utils.data.DataLoader(dst, batch_size=1)
 
     # if os.path.isfile(args.validate_model):
@@ -78,7 +83,7 @@ def validate(args):
         # print('pred.shape:', pred.shape)
         # print('gt.shape:', gt.shape)
 
-        if args.vis and i % 50 == 0:
+        if args.vis and i % 1 == 0:
             img = imgs.data.numpy()[0]
             # print(img.shape)
             label_color = dst.decode_segmap(gt[0]).transpose(2, 0, 1)
@@ -106,7 +111,12 @@ def validate(args):
                 # print(pred_label_color_hwc.dtype)
                 label_blend = img_hwc * 0.5 + pred_label_color_hwc * 0.5
                 label_blend = np.array(label_blend, dtype=np.uint8)
-                misc.imsave('/tmp/label_blend.png', label_blend)
+
+                if not os.path.exists('/tmp/' + init_time):
+                    os.mkdir('/tmp/' + init_time)
+                time_str = str(int(time.time()))
+
+                misc.imsave('/tmp/'+init_time+'/'+time_str+'_label_blend.png', label_blend)
 
         for gt_, pred_ in zip(gt, pred):
             gts.append(gt_)
@@ -129,6 +139,7 @@ if __name__=='__main__':
     parser.add_argument('--validate_model', type=str, default='', help='validate model path [ fcn32s_camvid_9.pkl ]')
     parser.add_argument('--validate_model_state_dict', type=str, default='', help='validate model state dict path [ fcn32s_camvid_9.pt ]')
     parser.add_argument('--dataset_path', type=str, default='', help='train dataset path [ /home/cgf/Data/CamVid ]')
+    parser.add_argument('--n_classes', type=int, default=13, help='train class num [ 13 ]')
     parser.add_argument('--vis', type=bool, default=False, help='visualize the training results [ False ]')
     parser.add_argument('--blend', type=bool, default=False, help='blend the result and the origin [ False ]')
     args = parser.parse_args()

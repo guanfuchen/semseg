@@ -11,6 +11,10 @@
 - [semantic-segmentation-pytorch](https://github.com/hangzhaomit/semantic-segmentation-pytorch) ade20k数据集常用模型评估，其中具有caffe，pytorch和torch代码的实现
 
 ---
+## 相关论文
+- [Adversarial Learning for Semi-supervised Semantic Segmentation](https://arxiv.org/abs/1802.07934) 代码[AdvSemiSeg](https://github.com/hfslyc/AdvSemiSeg)
+
+---
 ### 网络实现
 
 - FCN，参考[fcn_understanding](doc/fcn_understanding.md)
