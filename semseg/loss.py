@@ -2,20 +2,22 @@
 import torch.nn.functional as F
 
 def cross_entropy2d(input, target, weight=None, size_average=True):
-    # print(input.data.size())
-    # print(target.data.size())
     n, c, h, w = input.size()
-    log_p = F.log_softmax(input)
-    log_p = log_p.transpose(1, 2).transpose(2, 3).contiguous().view(-1, c)
-    # print(log_p.size())
-    log_p = log_p[target.view(n, h, w, 1).repeat(1, 1, 1, c) >= 0]
-    log_p = log_p.view(-1, c)
+    nt, ht, wt = target.size()
 
-    mask = target >= 0
-    target = target[mask]
-    # print(log_p.data.size())
-    # print(target.data.size())
-    loss = F.nll_loss(log_p, target, weight=weight, size_average=False)
-    if size_average:
-        loss /= mask.data.sum()
+    # Handle inconsistent size between input and target
+    if h > ht and w > wt:  # upsample labels
+        target = target.unsequeeze(1)
+        target = F.upsample(target, size=(h, w), mode="nearest")
+        target = target.sequeeze(1)
+    elif h < ht and w < wt:  # upsample images
+        input = F.upsample(input, size=(ht, wt), mode="bilinear")
+    elif h != ht and w != wt:
+        raise Exception("Only support upsampling")
+
+    input = input.transpose(1, 2).transpose(2, 3).contiguous().view(-1, c)
+    target = target.view(-1)
+    loss = F.cross_entropy(
+        input, target, weight=weight, size_average=size_average, ignore_index=250
+    )
     return loss
