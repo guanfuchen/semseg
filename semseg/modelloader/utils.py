@@ -262,25 +262,37 @@ class residualBlockPSP(nn.Module):
         return self.layers(x)
 
 class pyramidPooling(nn.Module):
+    """
+    金字塔池化模块，主要是将特征图通过不同的pool构造池化输出，最后的输出是和输入相同分辨率大小的concat的特征图
+    """
 
     def __init__(self, in_channels, pool_sizes):
         super(pyramidPooling, self).__init__()
 
         self.paths = []
+
         for i in range(len(pool_sizes)):
+            # 1*1卷积输出为in_channels/level的
             self.paths.append(conv2DBatchNormRelu(in_channels, int(in_channels / len(pool_sizes)), 1, 1, 0, bias=False))
 
         self.path_module_list = nn.ModuleList(self.paths)
         self.pool_sizes = pool_sizes
 
     def forward(self, x):
+        # 输出已经默认包括x
         output_slices = [x]
+        # 输出宽度需要和x相同
         h, w = x.view()[2:]
 
         for module, pool_size in zip(self.path_module_list, self.pool_sizes):
-            out = F.avg_pool2d(x, pool_size, 1, 0)
+            # 金字塔池化操作，分别对每一个module和sizes进行操作
+            # 首先使用平均池化层操作获得相应size的池化特征图
+            out = F.avg_pool2d(x, pool_size, stride=1, padding=0)
+            # 通过module减小维度降低计算量
             out = module(out)
+            # 然后上采样即可
             out = F.upsample(out, size=(h,w), mode='bilinear')
             output_slices.append(out)
 
+        # 最后把[x, pool1_up, pool2_up, pool3_up, pool4_up] concat即可
         return torch.cat(output_slices, dim=1)

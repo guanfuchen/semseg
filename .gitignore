@@ -4,3 +4,4 @@ model_vis.gv.pdf
 *.pkl
 *.pyc
 *.pt
+ppt/
