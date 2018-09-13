@@ -76,6 +76,8 @@ def train(args):
 
 
 
+    if args.cuda:
+        model.cuda()
     print('start_epoch:', start_epoch)
     optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr, momentum=0.99, weight_decay=5e-4)
     for epoch in range(start_epoch+1, 20000, 1):
@@ -93,6 +95,9 @@ def train(args):
             imgs = Variable(imgs)
             labels = Variable(labels)
 
+            if args.cuda:
+                imgs = imgs.cuda()
+                labels = labels.cuda()
             outputs = model(imgs)
 
             if args.vis and i%50==0:
@@ -123,7 +128,7 @@ def train(args):
             optimizer.zero_grad()
 
             loss = cross_entropy2d(outputs, labels)
-            loss_numpy = loss.data.numpy()
+            loss_numpy = loss.cpu().data.numpy()
             loss_epoch += loss_numpy
             print('loss:', loss_numpy)
             loss.backward()
@@ -172,6 +177,7 @@ if __name__=='__main__':
     parser.add_argument('--n_classes', type=int, default=13, help='train class num [ 13 ]')
     parser.add_argument('--lr', type=float, default=1e-5, help='train learning rate [ 0.01 ]')
     parser.add_argument('--vis', type=bool, default=False, help='visualize the training results [ False ]')
+    parser.add_argument('--cuda', type=bool, default=False, help='use cuda [ False ]')
     args = parser.parse_args()
     # print(args.resume_model)
     # print(args.save_model)
