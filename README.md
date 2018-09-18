@@ -26,6 +26,15 @@
 - [Video Object Segmentation with Re-identification](https://arxiv.org/abs/1708.00197) [VS-ReID代码](https://github.com/lxx1991/VS-ReID)
 - Unified Perceptual Parsing for Scene Understanding
 - ESPNet: Efficient Spatial Pyramid of Dilated Convolutions for Semantic Segmentation，速度非常快，在TITAN上能达到112fps。
+- OCNet: Object Context Network for Scene Parsing
+- PSANet: Point-wise Spatial Attention Network for Scene Parsing
+
+---
+## 实例分割
+
+目前暂且收集相关实例分割到语义分割目录中，待综述完成单独分离。
+
+- Semantic Instance Segmentation with a Discriminative Loss Function
 
 ---
 ### 网络实现
