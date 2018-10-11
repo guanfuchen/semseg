@@ -16,6 +16,7 @@
 - [Learning to Segment Every Thing](https://arxiv.org/pdf/1711.10370.pdf) [代码seg_every_thing](https://github.com/ronghanghu/seg_every_thing)
 - [Video Object Segmentation with Re-identification](https://arxiv.org/abs/1708.00197) [VS-ReID代码](https://github.com/lxx1991/VS-ReID)
 - [segmentation-networks-benchmark](https://github.com/BloodAxe/segmentation-networks-benchmark) 评估了常用的语义分割网路的精度。
+- [SemanticSegmentation_DL](https://github.com/tangzhenyu/SemanticSegmentation_DL)，该仓库整理了常用的DL语义分割论文资料。
 
 ---
 ## 相关论文
@@ -28,6 +29,14 @@
 - ESPNet: Efficient Spatial Pyramid of Dilated Convolutions for Semantic Segmentation，速度非常快，在TITAN上能达到112fps。
 - OCNet: Object Context Network for Scene Parsing
 - PSANet: Point-wise Spatial Attention Network for Scene Parsing
+- Recent progress in semantic image segmentation，简单地综述性文章，可以作为科普文章查看，意义不太大。
+- Not All Pixels Are Equal: Difficulty-Aware Semantic Segmentation via Deep Layer Cascade
+- Wider or Deeper: Revisiting the ResNet Model for Visual Recognition
+- High-performance Semantic Segmentation Using Very Deep Fully Convolutional Networks
+- Dilated Residual Networks
+- Fully Convolutional Instance-aware Semantic Segmentation
+- Light-Weight RefineNet for Real-Time Semantic Segmentation
+- Dark Model Adaptation: Semantic Image Segmentation from Daytime to Nighttime，从白天到黑夜自适应的语义图像分割。n 
 
 ---
 ## 实例分割
