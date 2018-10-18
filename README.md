@@ -39,6 +39,15 @@
 - Light-Weight RefineNet for Real-Time Semantic Segmentation
 - Dark Model Adaptation: Semantic Image Segmentation from Daytime to Nighttime，从白天到黑夜自适应的语义图像分割。
 - Label Refinement Network for Coarse-to-Fine Semantic Segmentation
+- Smoothed Dilated Convolutions for Improved Dense Prediction，非常好的一篇对于空洞卷积理解的论文，值得阅读，这篇文章将空洞卷积理解为3个分解操作，然后通过建立不同group之间的联系去除网格伪影进行。
+- Characterizing Adversarial Examples Based on Spatial Consistency Information for Semantic Segmentation
+- UOLO - automatic object detection and segmentation in biomedical images，联合目标检测和语义分割的框架，可以参考借鉴。
+- 弱监督语义分割，参考如下。
+
+---
+## 弱监督语义分割
+
+- Generating Self-Guided Dense Annotations for Weakly Supervised Semantic Segmentation
 
 ---
 ## 实例分割
