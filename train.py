@@ -14,7 +14,9 @@ from semseg.loss import cross_entropy2d
 from semseg.modelloader.drn import drn_d_22, DRNSeg
 from semseg.modelloader.duc_hdc import ResNetDUC
 from semseg.modelloader.enet import ENet
+from semseg.modelloader.enetv2 import ENetV2
 from semseg.modelloader.erfnet import erfnet
+from semseg.modelloader.fc_densenet import fcdensenet103
 from semseg.modelloader.fcn import fcn
 from semseg.modelloader.pspnet import pspnet
 from semseg.modelloader.segnet import segnet
@@ -51,13 +53,17 @@ def train(args):
         elif args.structure == 'segnet':
             model = segnet(n_classes=dst.n_classes, pretrained=args.init_vgg16)
         elif args.structure == 'ENet':
-            model = ENet(n_classes=dst.n_classes, pretrained=args.init_vgg16)
+            model = ENet(n_classes=dst.n_classes)
+        elif args.structure == 'ENetV2':
+            model = ENetV2(n_classes=dst.n_classes)
         elif args.structure == 'drn_d_22':
             model = DRNSeg(model_name='drn_d_22', n_classes=dst.n_classes, pretrained=args.init_vgg16)
         elif args.structure == 'pspnet':
-            model = pspnet(n_classes=dst.n_classes, pretrained=args.init_vgg16, use_aux=False)
+            model = pspnet(n_classes=dst.n_classes)
         elif args.structure == 'erfnet':
             model = erfnet(n_classes=dst.n_classes)
+        elif args.structure == 'fcdensenet103':
+            model = fcdensenet103(n_classes=dst.n_classes)
         if args.resume_model_state_dict != '':
             try:
                 # fcn32s、fcn16s和fcn8s模型略有增加参数，互相赋值重新训练过程中会有KeyError，暂时捕捉异常处理
@@ -175,7 +181,7 @@ if __name__=='__main__':
     parser.add_argument('--data_augment', type=bool, default=False, help='enlarge the training data [ False ]')
     parser.add_argument('--batch_size', type=int, default=1, help='train dataset batch size [ 1 ]')
     parser.add_argument('--n_classes', type=int, default=13, help='train class num [ 13 ]')
-    parser.add_argument('--lr', type=float, default=1e-5, help='train learning rate [ 0.01 ]')
+    parser.add_argument('--lr', type=float, default=1e-5, help='train learning rate [ 0.00001 ]')
     parser.add_argument('--vis', type=bool, default=False, help='visualize the training results [ False ]')
     parser.add_argument('--cuda', type=bool, default=False, help='use cuda [ False ]')
     args = parser.parse_args()

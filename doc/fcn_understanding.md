@@ -4,7 +4,8 @@
 
 - [fcn.berkeleyvision.org]()https://github.com/shelhamer/fcn.berkeleyvision.org) 作者论文实现代码，使用caffe
 - [fcn](https://github.com/wkentaro/fcn) 使用chainer实现的fcn
-- [pytorch-fcn](https://github.com/wkentaro/pytorch-fcn) 使用pytorch实现的fcn，其中很多训练相关的指标都借鉴于此
+- [pytorch-fcn](https://github.com/wkentaro/pytorch-fcn) 使用pytorch实现的fcn，其中很多训练相关的指标都借鉴于此，该代码给了原论文的结果。
+- [FCN-pytorch](https://github.com/pochih/FCN-pytorch) 该版本在CamVid和Cityscapes上成功训练。
 
 ## FCN32s
 主架构由VGG16组成，第一个卷积层的padding为100，最后的线性分类器修改为全卷积网络，这样的网络输出大小和原始图像大小不同，使用上采样将输出结果上采样和原始分辨率相同。
