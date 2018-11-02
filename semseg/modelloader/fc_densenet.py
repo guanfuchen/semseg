@@ -153,8 +153,8 @@ def fcdensenet56_nodrop():
     return FCDenseNet(4, 12, drop_rate=0)
 
 
-def fcdensenet56(drop_rate=0.2):
-    return FCDenseNet(4, 12, drop_rate=drop_rate)
+def fcdensenet56(n_classes, drop_rate=0.2):
+    return FCDenseNet(4, 12, drop_rate=drop_rate, n_classes=n_classes)
 
 
 def fcdensenet67(drop_rate=0.2):

@@ -12,11 +12,11 @@ from torch.autograd import Variable
 from semseg.dataloader.camvid_loader import camvidLoader
 from semseg.loss import cross_entropy2d
 from semseg.modelloader.drn import drn_d_22, DRNSeg
-from semseg.modelloader.duc_hdc import ResNetDUC
+from semseg.modelloader.duc_hdc import ResNetDUC, ResNetDUCHDC
 from semseg.modelloader.enet import ENet
 from semseg.modelloader.enetv2 import ENetV2
 from semseg.modelloader.erfnet import erfnet
-from semseg.modelloader.fc_densenet import fcdensenet103
+from semseg.modelloader.fc_densenet import fcdensenet103, fcdensenet56
 from semseg.modelloader.fcn import fcn
 from semseg.modelloader.pspnet import pspnet
 from semseg.modelloader.segnet import segnet
@@ -50,6 +50,8 @@ def train(args):
             model = fcn(module_type='8s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
         elif args.structure == 'ResNetDUC':
             model = ResNetDUC(n_classes=dst.n_classes, pretrained=args.init_vgg16)
+        elif args.structure == 'ResNetDUCHDC':
+            model = ResNetDUCHDC(n_classes=dst.n_classes, pretrained=args.init_vgg16)
         elif args.structure == 'segnet':
             model = segnet(n_classes=dst.n_classes, pretrained=args.init_vgg16)
         elif args.structure == 'ENet':
@@ -58,12 +60,20 @@ def train(args):
             model = ENetV2(n_classes=dst.n_classes)
         elif args.structure == 'drn_d_22':
             model = DRNSeg(model_name='drn_d_22', n_classes=dst.n_classes, pretrained=args.init_vgg16)
+        elif args.structure == 'drn_a_50':
+            model = DRNSeg(model_name='drn_a_50', n_classes=dst.n_classes, pretrained=args.init_vgg16)
+        elif args.structure == 'drn_a_18':
+            model = DRNSeg(model_name='drn_a_18', n_classes=dst.n_classes, pretrained=args.init_vgg16)
+        elif args.structure == 'drn_e_22':
+            model = DRNSeg(model_name='drn_e_22', n_classes=dst.n_classes, pretrained=args.init_vgg16)
         elif args.structure == 'pspnet':
             model = pspnet(n_classes=dst.n_classes)
         elif args.structure == 'erfnet':
             model = erfnet(n_classes=dst.n_classes)
         elif args.structure == 'fcdensenet103':
             model = fcdensenet103(n_classes=dst.n_classes)
+        elif args.structure == 'fcdensenet56':
+            model = fcdensenet56(n_classes=dst.n_classes)
         if args.resume_model_state_dict != '':
             try:
                 # fcn32s、fcn16s和fcn8s模型略有增加参数，互相赋值重新训练过程中会有KeyError，暂时捕捉异常处理
