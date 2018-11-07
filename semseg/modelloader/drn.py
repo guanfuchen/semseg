@@ -566,14 +566,14 @@ def drn_e_22(pretrained=False, **kwargs):
     #     model.load_state_dict(model_zoo.load_url(model_urls['drn-d-22']))
     return model
 
+# 转置卷积权重初始化填充方法
 def fill_up_weights(up):
     w = up.weight.data
     f = math.ceil(w.size(2) / 2)
     c = (2 * f - 1 - f % 2) / (2. * f)
     for i in range(w.size(2)):
         for j in range(w.size(3)):
-            w[0, 0, i, j] = \
-                (1 - math.fabs(i / f - c)) * (1 - math.fabs(j / f - c))
+            w[0, 0, i, j] = (1 - math.fabs(i / f - c)) * (1 - math.fabs(j / f - c))
     for c in range(1, w.size(0)):
         w[c, 0, :, :] = w[0, 0, :, :]
 
@@ -597,14 +597,19 @@ class DRNSeg(nn.Module):
 
         # 仅仅在最后一层seg layer上存有bias
         self.seg = nn.Conv2d(model.out_dim, n_classes, kernel_size=1)
-        self.softmax = nn.LogSoftmax()
+        # self.softmax = nn.LogSoftmax()
         m = self.seg
+
+        # 初始化分割图最后的卷积weights和bias
         n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
         m.weight.data.normal_(0, math.sqrt(2. / n))
         m.bias.data.zero_()
+
         if use_torch_up:
+            # 使用pytorch双向性上采样
             self.up = nn.UpsamplingBilinear2d(scale_factor=8)
         else:
+            # 使用转置卷积上采样
             up = nn.ConvTranspose2d(n_classes, n_classes, 16, stride=8, padding=4, output_padding=0, groups=n_classes, bias=False)
             fill_up_weights(up)
             up.weight.requires_grad = False
@@ -612,7 +617,11 @@ class DRNSeg(nn.Module):
 
     def forward(self, x):
         x = self.base(x)
+
+        # 将分割图对应到分割类别数上
         x = self.seg(x)
+
+        # 使用双线性上采样或者转置卷积上采样8倍降采样率的分割图
         y = self.up(x)
         return y
 

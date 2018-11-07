@@ -159,7 +159,6 @@ class segnet_squeeze(nn.Module):
         self.unpool1 = nn.MaxUnpool2d(kernel_size=3, stride=2)
         # self.conv1_D = nn.ConvTranspose2d(96, n_classes, kernel_size=8, stride=2)
         self.conv1_D = nn.ConvTranspose2d(96, n_classes, kernel_size=10, stride=2, padding=1)
-        self.relu1_D = nn.ReLU(inplace=True)
 
         self.init_weights(pretrained)
 
@@ -255,7 +254,6 @@ class segnet_squeeze(nn.Module):
 
         x = self.unpool1(x, indices=pool_indices1, output_size=unpool_shape1)
         x = self.conv1_D(x)
-        x = self.relu1_D(x)
         return x
 
 
@@ -276,7 +274,7 @@ if __name__ == '__main__':
     # # print(loss)
 
     n_classes = 21
-    model = segnet_squeeze(n_classes=n_classes, pretrained=True)
+    model = segnet_squeeze(n_classes=n_classes, pretrained=False)
     # model.init_vgg16()
     x = Variable(torch.randn(1, 3, 360, 480))
     y = Variable(torch.LongTensor(np.ones((1, 360, 480), dtype=np.int)))

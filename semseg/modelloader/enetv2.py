@@ -4,8 +4,14 @@
 import torch.nn as nn
 import torch
 from torch.autograd import Variable
+import numpy as np
+import torch
+import time
+import torch.nn.functional as F
 
 # code is from https://github.com/davidtvs/PyTorch-ENet/blob/master/models/enet.py
+from semseg.loss import cross_entropy2d
+
 
 class InitialBlock(nn.Module):
     """The initial block is composed of two branches:
@@ -635,3 +641,19 @@ class ENetV2(nn.Module):
         x = self.transposed_conv(x)
 
         return x
+
+if __name__ == '__main__':
+    n_classes = 21
+    model = ENetV2(n_classes=n_classes)
+    # model.init_vgg16()
+    x = Variable(torch.randn(1, 3, 360, 480))
+    y = Variable(torch.LongTensor(np.ones((1, 360, 480), dtype=np.int)))
+    # print(x.shape)
+    start = time.time()
+    pred = model(x)
+    end = time.time()
+    print(end-start)
+    # print(pred.shape)
+    # print('pred.type:', pred.type)
+    loss = cross_entropy2d(pred, y)
+    # print(loss)
