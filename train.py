@@ -19,7 +19,7 @@ from semseg.modelloader.erfnet import erfnet
 from semseg.modelloader.fc_densenet import fcdensenet103, fcdensenet56
 from semseg.modelloader.fcn import fcn
 from semseg.modelloader.pspnet import pspnet
-from semseg.modelloader.segnet import segnet
+from semseg.modelloader.segnet import segnet, segnet_squeeze
 
 
 def train(args):
@@ -54,6 +54,8 @@ def train(args):
             model = ResNetDUCHDC(n_classes=dst.n_classes, pretrained=args.init_vgg16)
         elif args.structure == 'segnet':
             model = segnet(n_classes=dst.n_classes, pretrained=args.init_vgg16)
+        elif args.structure == 'segnet_squeeze':
+            model = segnet_squeeze(n_classes=dst.n_classes, pretrained=args.init_vgg16)
         elif args.structure == 'ENet':
             model = ENet(n_classes=dst.n_classes)
         elif args.structure == 'ENetV2':
