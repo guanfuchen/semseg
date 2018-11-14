@@ -129,9 +129,9 @@ def train(args):
             outputs = model(imgs)
 
             if args.vis and i%50==0:
-                pred_labels = outputs.data.max(1)[1].numpy()
+                pred_labels = outputs.cpu().data.max(1)[1].numpy()
                 # print(pred_labels.shape)
-                label_color = dst.decode_segmap(labels.data.numpy()[0]).transpose(2, 0, 1)
+                label_color = dst.decode_segmap(labels.cpu().data.numpy()[0]).transpose(2, 0, 1)
                 # print(label_color.shape)
                 pred_label_color = dst.decode_segmap(pred_labels[0]).transpose(2, 0, 1)
                 # print(pred_label_color.shape)
@@ -140,14 +140,14 @@ def train(args):
                 win = 'pred_label_color'
                 vis.image(pred_label_color, win=win)
 
-                if epoch < 100:
-                    if not os.path.exists('/tmp/'+init_time):
-                        os.mkdir('/tmp/'+init_time)
-                    time_str = str(int(time.time()))
-                    print('label_color.transpose(2, 0, 1).shape:', label_color.transpose(1, 2, 0).shape)
-                    print('pred_label_color.transpose(2, 0, 1).shape:', pred_label_color.transpose(1, 2, 0).shape)
-                    cv2.imwrite('/tmp/'+init_time+'/'+time_str+'_label.png', label_color.transpose(1, 2, 0))
-                    cv2.imwrite('/tmp/'+init_time+'/'+time_str+'_pred_label.png', pred_label_color.transpose(1, 2, 0))
+                # if epoch < 100:
+                #     if not os.path.exists('/tmp/'+init_time):
+                #         os.mkdir('/tmp/'+init_time)
+                #     time_str = str(int(time.time()))
+                #     print('label_color.transpose(2, 0, 1).shape:', label_color.transpose(1, 2, 0).shape)
+                #     print('pred_label_color.transpose(2, 0, 1).shape:', pred_label_color.transpose(1, 2, 0).shape)
+                #     cv2.imwrite('/tmp/'+init_time+'/'+time_str+'_label.png', label_color.transpose(1, 2, 0))
+                #     cv2.imwrite('/tmp/'+init_time+'/'+time_str+'_pred_label.png', pred_label_color.transpose(1, 2, 0))
 
 
             # print(outputs.size())
@@ -166,9 +166,9 @@ def train(args):
             # 显示一个周期的loss曲线
             if args.vis:
                 win = 'loss'
-                win_res = vis.line(X=np.ones(1)*i, Y=loss.data.numpy(), win=win, update='append')
+                win_res = vis.line(X=np.ones(1)*i, Y=loss.cpu().data.numpy(), win=win, update='append')
                 if win_res != win:
-                    vis.line(X=np.ones(1)*i, Y=loss.data.numpy(), win=win)
+                    vis.line(X=np.ones(1)*i, Y=loss.cpu().data.numpy(), win=win)
 
         # 关闭清空一个周期的loss
         if args.vis:

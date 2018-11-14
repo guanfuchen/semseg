@@ -3,11 +3,16 @@
 语义图像分割，为图像中的每个像素分配语义标签（例如“道路”，“天空”，“人”，“狗”）的任务使得能够实现许多新应用，例如Pixel 2和Pixel 2 XL智能手机的纵向模式中提供的合成浅景深效果和移动实时视频分割。
 > 引用自[Semantic Image Segmentation with DeepLab in TensorFlow](https://ai.googleblog.com/2018/03/semantic-image-segmentation-with.html)
 
+下面将近期主要的论文整理表格以供后面进一步总结。
+
+![](https://chenguanfuqq.gitee.io/tuquan2/img_2018_5/semantic_survey_total.png)
+
 ---
 ## semantic segmentation algorithms
 
 这个仓库旨在实现常用的语义分割算法，主要参考如下：
 - [pytorch-semseg](https://github.com/meetshah1995/pytorch-semseg)
+- [Semantic-Segmentation-Suite](https://github.com/GeorgeSeif/Semantic-Segmentation-Suite)，和pytorch对应的tensorflow语义分割框架实现。
 - [awesome-semantic-segmentation](https://github.com/mrgloom/awesome-semantic-segmentation)，语义分割的awesome系列。
 - [Semantic Segmentation using Fully Convolutional Networks over the years](https://meetshah1995.github.io/semantic-segmentation/deep-learning/pytorch/visdom/2017/06/01/semantic-segmentation-over-the-years.html#sec_datasets)
 - [Fully Convolutional Networks for Semantic Segmentation](doc/fcn_understanding.md)
@@ -107,34 +112,30 @@
 ---
 ### 用法
 
-**可视化**
-
+- 可视化
 [visdom](https://github.com/facebookresearch/visdom)
 [开发相关问题](doc/visdom_problem.md)
-
 ```bash
 # 在tmux或者另一个终端中开启可视化服务器visdom
 python -m visdom.server
 # 然后在浏览器中查看127.0.0.1:9097
 ```
-
-**训练**
+- 训练
 ```bash
 # 训练模型
 python train.py
 ```
-
-**校验**
+- 校验
 ```bash
 # 校验模型
 python validate.py
 ```
 
-**测试**
-```bash
-# 测试模型
-python test.py
-```
+![ENet可视化结果](https://chenguanfuqq.gitee.io/tuquan2/img_2018_5/enet_data_11_1.png)
+
+
+
+
 
 以下是相关语义分割论文粗略整理。
 
@@ -176,3 +177,44 @@ python test.py
 ![](https://chenguanfuqq.gitee.io/tuquan2/img_2018_5/rtseg_1.png)
 
 ![](https://chenguanfuqq.gitee.io/tuquan2/img_2018_5/rtseg_2.png)
+
+---
+## SegNet: A Deep Convolutional Encoder-Decoder Architecture for Robust Semantic Pixel-Wise Labelling
+
+| 摘要 |
+| ---- |
+| We propose a novel deep architecture, SegNet, for semantic pixel wise image labelling. SegNet has several attractive properties; (i) it only requires forward evaluation of a fully learnt function to obtain smooth label predictions, (ii) with increasing depth, a larger context is considered for pixel labelling which improves accuracy, and (iii) it is easy to visualise the effect of feature activation(s) in the pixel label space at any depth.
+SegNet is composed of a stack of encoders followed by a corresponding decoder stack which feeds into a soft-max classification layer. The decoders help map low resolution feature maps at the output of the encoder stack to full input image size feature maps. This addresses an important drawback of recent deep learning approaches which have adopted networks designed for object categorization for pixel wise labelling. **These methods lack a mechanism to map deep layer feature maps to input dimensions.** They resort to **ad hoc** methods to upsample features, e.g. by replication. This results in noisy predictions and also restricts the number of pooling layers in order to avoid too much upsampling and thus reduces spatial context. SegNet overcomes these problems by learning to map encoder outputs to image pixel labels. We test the performance of SegNet on outdoor RGB scenes from CamVid, KITTI and indoor scenes from the NYU dataset. Our results show that SegNet achieves state-of-the-art performance even without use of additional cues such as depth, video frames or post-processing with CRF models. |
+
+| 会议／期刊 | 作者 | 论文 | 代码 |
+| ---- | ---- | ---- | ---- |
+| arXiv: 1505.07293 | Vijay Badrinarayanan, Ankur Handa, Roberto Cipolla | SegNet: A Deep Convolutional Encoder-Decoder Architecture for Robust Semantic Pixel-Wise Labelling | [caffe-segnet](https://github.com/alexgkendall/caffe-segnet) |
+
+本文为SegNet-Basic，基本思路就是编码器-解码器架构，指出当前语义分割方法都缺少一个机制将深度特征图map到输入维度的机制，基本都是特定的上采样特征方法，比如复制。
+
+---
+## Bayesian SegNet: Model Uncertainty in Deep Convolutional Encoder-Decoder Architectures for Scene Understanding
+
+| 摘要 |
+| ---- |
+| We present a deep learning framework for **probabilistic pixel-wise semantic segmentation**, which we term **Bayesian SegNet**. Semantic segmentation is an important tool for visual scene understanding and a meaningful measure of uncertainty is essential for decision making. **Our contribution is a practical system which is able to predict pixelwise class labels with a measure of model uncertainty.** We achieve this by Monte Carlo sampling with dropout at test time to generate a posterior distribution of pixel class labels. In addition, we show that modelling uncertainty improves segmentation performance by 2-3% across a number of state of the art architectures such as SegNet, FCN and Dilation Network, with no additional parametrisation. We also observe a significant improvement in performance for smaller datasets where modelling uncertainty is more effective. We benchmark Bayesian SegNet on the indoor SUN Scene Understanding and outdoor CamVid driving scenes datasets. |
+
+| 会议／期刊 | 作者 | 论文 | 代码 |
+| ---- | ---- | ---- | ---- |
+| arXiv: 1511.02680 | **Alex Kendall**, Vijay Badrinarayanan, Roberto Cipolla | Bayesian SegNet: Model Uncertainty in Deep Convolutional Encoder-Decoder Architectures for Scene Understandin | [caffe-segnet](https://github.com/alexgkendall/caffe-segnet) |
+
+本文主要提出了一种基于概率的像素级语义分割框架Bayesian SegNet，通过建模模型不确定性能够在许多网络中都提升2-3%性能，如SegNet，FCN和Dilation网络。
+
+---
+## SegNet: A Deep Convolutional Encoder-Decoder Architecture for Image Segmentation
+
+| 摘要 |
+| ---- |
+| We present a novel and practical deep fully convolutional neural network architecture for semantic pixel-wise segmentation termed **SegNet**. This core trainable segmentation engine consists of an encoder network, a corresponding decoder network followed by a pixel-wise classification layer. **The architecture of the encoder network is topologically identical to the 13 convolutional layers in the VGG16 network.** The role of the decoder network is to map the low resolution encoder feature maps to full input resolution feature maps for pixel-wise classification. The novelty of SegNet lies is in the manner in which the decoder upsamples its lower resolution input feature map(s). **Specifically, the decoder uses pooling indices computed in the max-pooling step of the corresponding encoder to perform non-linear upsampling.** This eliminates the need for learning to upsample. The upsampled maps are sparse and are then convolved with trainable filters to produce dense feature maps. We compare our proposed architecture with the widely adopted FCN and also with the well known DeepLab-LargeFOV, DeconvNet architectures. This comparison reveals **the memory versus accuracy** trade-off involved in achieving good segmentation performance.
+SegNet was primarily motivated by scene understanding applications. Hence, it is designed to be efficient both in terms of memory and computational time during inference. It is also significantly smaller in the number of trainable parameters than other competing architectures and can be trained end-to-end using stochastic gradient descent. We also performed a controlled benchmark of SegNet and other architectures on both road scenes and SUN RGB-D indoor scene segmentation tasks. These quantitative assessments show that SegNet provides good performance with competitive inference time and most efficient inference memory-wise as compared to other architectures. We also provide a Caffe implementation of SegNet and a web demo at http://mi.eng.cam.ac.uk/projects/segnet/. |
+
+| 会议／期刊 | 作者 | 论文 | 代码 |
+| ---- | ---- | ---- | ---- |
+| arXiv: 1511.00561 | Vijay Badrinarayanan, **Alex Kendall**, Roberto Cipolla | SegNet: A Deep Convolutional Encoder-Decoder Architecture for Image Segmentation | [caffe-segnet](https://github.com/alexgkendall/caffe-segnet) |
+
+本文提出的SegNet是应用最为广泛的架构，其中SegNet-VGG16在性能和精度上都获得了较大的提升，主要指出了解码器使用的反池化操作。
