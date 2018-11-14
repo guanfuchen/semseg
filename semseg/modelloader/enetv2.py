@@ -11,6 +11,7 @@ import torch.nn.functional as F
 
 # code is from https://github.com/davidtvs/PyTorch-ENet/blob/master/models/enet.py
 from semseg.loss import cross_entropy2d
+from semseg.pytorch_modelsize import SizeEstimator
 
 
 class InitialBlock(nn.Module):
@@ -179,6 +180,23 @@ class RegularBottleneck(nn.Module):
                     dilation=dilation,
                     bias=bias), nn.BatchNorm2d(internal_channels), activation)
         else:
+            # self.ext_conv2 = nn.Sequential(
+            #     nn.Conv2d(
+            #         internal_channels,
+            #         internal_channels,
+            #         kernel_size=(kernel_size, 1),
+            #         stride=1,
+            #         padding=(padding, 0),
+            #         dilation=dilation,
+            #         bias=bias), nn.BatchNorm2d(internal_channels), activation,
+            #     nn.Conv2d(
+            #         internal_channels,
+            #         internal_channels,
+            #         kernel_size=(1, kernel_size),
+            #         stride=1,
+            #         padding=(0, padding),
+            #         dilation=dilation,
+            #         bias=bias), nn.BatchNorm2d(internal_channels), activation)
             self.ext_conv2 = nn.Sequential(
                 nn.Conv2d(
                     internal_channels,
@@ -648,12 +666,20 @@ if __name__ == '__main__':
     # model.init_vgg16()
     x = Variable(torch.randn(1, 3, 360, 480))
     y = Variable(torch.LongTensor(np.ones((1, 360, 480), dtype=np.int)))
+    # x = Variable(torch.randn(1, 3, 512, 1024))
+    # y = Variable(torch.LongTensor(np.ones((1, 512, 1024), dtype=np.int)))
     # print(x.shape)
+
+    time_avg = 1
     start = time.time()
-    pred = model(x)
+    for run_time in range(time_avg):
+        pred = model(x)
     end = time.time()
-    print(end-start)
+    print(end-start)/time_avg
     # print(pred.shape)
     # print('pred.type:', pred.type)
     loss = cross_entropy2d(pred, y)
     # print(loss)
+
+    # se = SizeEstimator(model, input_size=(1, 3, 360, 480))
+    # print(se.estimate_size())

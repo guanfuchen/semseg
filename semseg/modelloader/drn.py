@@ -25,6 +25,8 @@ from semseg.loss import cross_entropy2d
 #     'drn-d-54': webroot + 'drn_d_54-0e0534ff.pth',
 #     'drn-d-105': webroot + 'drn_d_105-12b40979.pth'
 # }
+from semseg.pytorch_modelsize import SizeEstimator
+
 
 class Inception(nn.Module):
     def __init__(self, in_planes, n1x1, n3x3red, n3x3, n5x5red, n5x5, pool_planes):
@@ -638,6 +640,8 @@ if __name__ == '__main__':
     # model.init_vgg16()
     x = Variable(torch.randn(1, 3, 360, 480))
     y = Variable(torch.LongTensor(np.ones((1, 360, 480), dtype=np.int)))
+    # x = Variable(torch.randn(1, 3, 512, 1024))
+    # y = Variable(torch.LongTensor(np.ones((1, 512, 1024), dtype=np.int)))
     # print(x.shape)
     start = time.time()
     pred = model(x)
@@ -646,3 +650,6 @@ if __name__ == '__main__':
     # print(pred.shape)
     loss = cross_entropy2d(pred, y)
     print(loss)
+
+    # se = SizeEstimator(model, input_size=(1, 3, 360, 480))
+    # print(se.estimate_size())

@@ -8,6 +8,7 @@
 
 这个仓库旨在实现常用的语义分割算法，主要参考如下：
 - [pytorch-semseg](https://github.com/meetshah1995/pytorch-semseg)
+- [awesome-semantic-segmentation](https://github.com/mrgloom/awesome-semantic-segmentation)，语义分割的awesome系列。
 - [Semantic Segmentation using Fully Convolutional Networks over the years](https://meetshah1995.github.io/semantic-segmentation/deep-learning/pytorch/visdom/2017/06/01/semantic-segmentation-over-the-years.html#sec_datasets)
 - [Fully Convolutional Networks for Semantic Segmentation](doc/fcn_understanding.md)
 - [dataset_loaders](https://github.com/fvisin/dataset_loaders) 实现了主要的数据集的加载，包括视频，图像
@@ -135,3 +136,43 @@ python validate.py
 python test.py
 ```
 
+以下是相关语义分割论文粗略整理。
+
+---
+## ShuffleSeg: Real-time Semantic Segmentation Network
+
+| 摘要 |
+| ---- |
+| **Real-time semantic segmentation** is of significant importance for mobile and robotics related applications. We propose a computationally efficient segmentation network which we term as **ShuffleSeg**. **The proposed architecture is based on grouped convolution and channel shuffling in its encoder for improving the performance.** An ablation study of different decoding methods is compared including Skip architecture, UNet, and Dilation Frontend. Interesting insights on the speed and accuracy tradeoff is discussed. It is shown that skip architecture in the decoding method provides the best compromise for the goal of real-time performance, while it provides adequate accuracy by utilizing higher resolution feature maps for a more accurate segmentation. ShuffleSeg is evaluated on CityScapes and compared against the state of the art real-time segmentation networks. It achieves 2x GFLOPs reduction, while it provides on par mean intersection over union of **58.3%** on CityScapes test set. ShuffleSeg runs at **15.7 frames** per second on NVIDIA Jetson TX2, which makes it of great potential for real-time applications. |
+
+| 会议／期刊 | 作者 | 论文 | 代码 |
+| ---- | ---- | ---- | ---- |
+| arXiv: 1803.03816 | Mostafa Gamal, **Mennatullah Siam**, Moemen Abdel-Razek | ShuffleSeg: Real-time Semantic Segmentation Network | [TFSegmentation](https://github.com/MSiam/TFSegmentation) |
+
+本文提出了一种基于ShuffleNet的实时语义分割网络，通过在编码器中使用grouped convolution和channle shuffling（ShuffleNet基本结构），同时用不同的解码方法，包括Skip架构，UNet和Dilation前端探索了精度和速度的平衡。
+
+主要动机是：
+> It was shown in [4][2][3] that depthwise separable convolution or grouped convolution reduce the computational cost, while maintaining good representation capability.
+
+训练的trciks：充分利用CityScapes数据集，将其中粗略标注的图像作为网络预训练，然后基于精细标注的图像作为网络微调。
+
+![](https://chenguanfuqq.gitee.io/tuquan2/img_2018_5/shuffle_seg_1.png)
+
+---
+## RTSeg: Real-time Semantic Segmentation Comparative Study
+
+| 摘要 |
+| ---- |
+| Semantic segmentation benefits robotics related applications especially autonomous driving. Most of the research on semantic segmentation is only on increasing the accuracy of segmentation models with little attention to computationally efficient solutions. **The few work conducted in this direction does not provide principled methods to evaluate the different design choices for segmentation.** In this paper, we address this gap by presenting a real-time semantic segmentation benchmarking framework with a decoupled design for feature extraction and decoding methods. **The framework is comprised of different network architectures for feature extraction such as VGG16, Resnet18, MobileNet, and ShuffleNet.** It is also comprised of multiple meta-architectures for segmentation that define the decoding methodology. These include SkipNet, UNet, and Dilation Frontend. Experimental results are presented on the Cityscapes dataset for urban scenes. The modular design allows novel architectures to emerge, that lead to 143x GFLOPs reduction in comparison to SegNet. |
+
+| 会议／期刊 | 作者 | 论文 | 代码 |
+| ---- | ---- | ---- | ---- |
+| arXiv: 1803.02758 | **Mennatullah Siam**, Mostafa Gamal, Moemen Abdel-Razek, Senthil Yogamani, Martin Jagersand | RTSeg: Real-time Semantic Segmentation Comparative Study | [TFSegmentation](https://github.com/MSiam/TFSegmentation) |
+
+和ShuffleSeg: Real-time Semantic Segmentation Network同一作者。
+
+本文整体思路和ShuffleSeg类同，只不过更加抽象了编码器解码器，这里的编码器不再仅仅是ShuffleNet，而是增加了VGG16，Resnet18，MobileNet，方便了后期不同基础网络性能的比较。
+
+![](https://chenguanfuqq.gitee.io/tuquan2/img_2018_5/rtseg_1.png)
+
+![](https://chenguanfuqq.gitee.io/tuquan2/img_2018_5/rtseg_2.png)
