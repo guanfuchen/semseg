@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-_resnet18_32s
 import torch
 import os
 import argparse
@@ -19,6 +19,7 @@ from semseg.modelloader.enetv2 import ENetV2
 from semseg.modelloader.erfnet import erfnet
 from semseg.modelloader.fc_densenet import fcdensenet103, fcdensenet56
 from semseg.modelloader.fcn import fcn
+from semseg.modelloader.fcn_resnet import fcn_resnet18
 from semseg.modelloader.pspnet import pspnet
 from semseg.modelloader.segnet import segnet, segnet_squeeze, segnet_alignres
 from semseg.modelloader.segnet_unet import segnet_unet
@@ -57,6 +58,8 @@ def train(args):
             model = fcn(module_type='16s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
         elif args.structure == 'fcn8s':
             model = fcn(module_type='8s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
+        if args.structure == 'fcn_resnet18_32s':
+            model = fcn_resnet18(module_type='32s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
         elif args.structure == 'ResNetDUC':
             model = ResNetDUC(n_classes=dst.n_classes, pretrained=args.init_vgg16)
         elif args.structure == 'ResNetDUCHDC':
@@ -161,9 +164,9 @@ def train(args):
             optimizer.zero_grad()
 
             loss = cross_entropy2d(outputs, labels)
-            loss_numpy = loss.cpu().data.numpy()
-            loss_epoch += loss_numpy
-            print('loss:', loss_numpy)
+            loss_np = loss.cpu().data.numpy()
+            loss_epoch += loss_np
+            print('loss:', loss_np)
             loss.backward()
 
             optimizer.step()
@@ -171,9 +174,10 @@ def train(args):
             # 显示一个周期的loss曲线
             if args.vis:
                 win = 'loss'
-                win_res = vis.line(X=np.ones(1)*i, Y=loss.cpu().data.numpy(), win=win, update='append')
+                loss_np_expand = np.expand_dims(loss_np, axis=0)
+                win_res = vis.line(X=np.ones(1)*i, Y=loss_np_expand, win=win, update='append')
                 if win_res != win:
-                    vis.line(X=np.ones(1)*i, Y=loss.cpu().data.numpy(), win=win)
+                    vis.line(X=np.ones(1)*i, Y=loss_np_expand, win=win)
 
         # 关闭清空一个周期的loss
         if args.vis:
@@ -185,9 +189,10 @@ def train(args):
         # print(loss_avg_epoch)
         if args.vis:
             win = 'loss_epoch'
-            win_res = vis.line(X=np.ones(1)*epoch, Y=loss_avg_epoch, win=win, update='append')
+            loss_avg_epoch_expand = np.expand_dims(loss_avg_epoch, axis=0)
+            win_res = vis.line(X=np.ones(1)*epoch, Y=loss_avg_epoch_expand, win=win, update='append')
             if win_res != win:
-                vis.line(X=np.ones(1)*epoch, Y=loss_avg_epoch, win=win)
+                vis.line(X=np.ones(1)*epoch, Y=loss_avg_epoch_expand, win=win)
 
         if args.save_model and epoch%args.save_epoch==0:
             torch.save(model.state_dict(), '{}_camvid_class_{}_{}.pt'.format(args.structure, dst.n_classes, epoch))

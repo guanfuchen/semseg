@@ -8,6 +8,20 @@
 ![](https://chenguanfuqq.gitee.io/tuquan2/img_2018_5/semantic_survey_total.png)
 
 ---
+### 网络实现
+
+- FCN（VGG和ResNet的骨干网络），已实现，参考[fcn_understanding](doc/fcn_understanding.md)
+- RefineNet，已实现，参考[refinenet_understanging](doc/refinenet_understanging.md)
+- DUC，参考[duc_understanding](doc/duc_understanding.md)
+- DRN，已实现
+- PSPNet，参考[pspnet_understanding](doc/pspnet_understanding.md)
+- ENet，已实现
+- ErfNet，已实现
+- LinkNet，已实现，参考[pytorch-linknet](https://github.com/e-lab/pytorch-linknet)
+- FC-DenseNet，已实现，参考[fcdensenet_understanding](doc/fcdensenet_understanding.md)
+- ...
+- 
+---
 ## semantic segmentation algorithms
 
 这个仓库旨在实现常用的语义分割算法，主要参考如下：
@@ -61,20 +75,6 @@
 目前暂且收集相关实例分割到语义分割目录中，待综述完成单独分离。
 
 - Semantic Instance Segmentation with a Discriminative Loss Function
-
----
-### 网络实现
-
-- FCN，已实现，参考[fcn_understanding](doc/fcn_understanding.md)
-- RefineNet，已实现，参考[refinenet_understanging](doc/refinenet_understanging.md)
-- DUC，参考[duc_understanding](doc/duc_understanding.md)
-- DRN，已实现
-- PSPNet，参考[pspnet_understanding](doc/pspnet_understanding.md)
-- ENet，已实现
-- ErfNet，已实现
-- LinkNet，已实现，参考[pytorch-linknet](https://github.com/e-lab/pytorch-linknet)
-- FC-DenseNet，已实现，参考[fcdensenet_understanding](doc/fcdensenet_understanding.md)
-- ...
 
 ---
 ### 数据集实现
