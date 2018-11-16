@@ -25,6 +25,7 @@ from semseg.loss import cross_entropy2d
 #     'drn-d-54': webroot + 'drn_d_54-0e0534ff.pth',
 #     'drn-d-105': webroot + 'drn_d_105-12b40979.pth'
 # }
+from semseg.modelloader.utils import AlignedResInception
 from semseg.pytorch_modelsize import SizeEstimator
 
 
@@ -138,60 +139,6 @@ class ResInception(nn.Module):
         out = self.relu(out)
         return out
 
-
-class AlignedResInception(nn.Module):
-    def __init__(self, in_planes, stride=1):
-        super(AlignedResInception, self).__init__()
-        self.relu = nn.ReLU(inplace=True)
-        self.b1 = nn.Sequential(
-            nn.Conv2d(in_planes, in_planes//4, kernel_size=1, stride=1),
-            nn.BatchNorm2d(in_planes//4),
-            nn.ReLU(True),
-            nn.Conv2d(in_planes//4, in_planes//4, kernel_size=3, stride=1, padding=1),
-        )
-
-        self.b2 = nn.Sequential(
-            nn.Conv2d(in_planes, in_planes//8, kernel_size=1, stride=1),
-            nn.BatchNorm2d(in_planes//8),
-            nn.ReLU(True),
-            nn.Conv2d(in_planes//8, in_planes//8, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(in_planes//8),
-            nn.ReLU(True),
-            nn.Conv2d(in_planes//8, in_planes//8, kernel_size=3, stride=1, padding=1),
-        )
-
-        self.b3 = nn.Sequential(
-            nn.BatchNorm2d(in_planes//8*3),
-            nn.ReLU(True),
-        )
-
-        self.b4 = nn.Sequential(
-            nn.Conv2d(in_planes//8*3, in_planes, kernel_size=1, stride=stride),
-            nn.BatchNorm2d(in_planes),
-            nn.ReLU(True),
-        )
-
-        self.downsample = None
-        if stride>1:
-            self.downsample = nn.Sequential(
-                nn.Conv2d(in_planes, in_planes, kernel_size=1, stride=stride, bias=False),
-                nn.BatchNorm2d(in_planes),
-            )
-
-    def forward(self, x):
-        y1 = self.b1(x)
-        y2 = self.b2(x)
-        # print('y1:', y1.size())
-        # print('y2:', y2.size())
-        y3 = torch.cat([y1,y2], 1)
-        y3 = self.b3(y3)
-        out = self.b4(y3)
-        if self.downsample is not None:
-            out = out + self.downsample(x)
-        else:
-            out = out + x
-        out = self.relu(out)
-        return out
 
 class CascadeResInception(nn.Module):
     def __init__(self):

@@ -182,6 +182,7 @@ class segnetUNetUp2(nn.Module):
         super(segnetUNetUp2, self).__init__()
         self.max_unpool = nn.MaxUnpool2d(kernel_size=2, stride=2)
         self.conv1 = conv2DBatchNormRelu(in_channels=in_channels*2, out_channels=in_channels, kernel_size=3, stride=1, padding=1)
+        # self.conv1 = conv2DBatchNormRelu(in_channels=in_channels, out_channels=in_channels, kernel_size=3, stride=1, padding=1)
         self.conv2 = conv2DBatchNormRelu(in_channels=in_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1)
         pass
 
@@ -190,6 +191,7 @@ class segnetUNetUp2(nn.Module):
         # print('concat_net.size():', concat_net.size())
         # print('x.size():', x.size())
         x = torch.cat([concat_net, x], 1)
+        # x = concat_net+x
         x = self.conv1(x)
         x = self.conv2(x)
         return x
@@ -200,6 +202,7 @@ class segnetUNetUp3(nn.Module):
         super(segnetUNetUp3, self).__init__()
         self.max_unpool = nn.MaxUnpool2d(kernel_size=2, stride=2)
         self.conv1 = conv2DBatchNormRelu(in_channels=in_channels*2, out_channels=in_channels, kernel_size=3, stride=1, padding=1)
+        # self.conv1 = conv2DBatchNormRelu(in_channels=in_channels, out_channels=in_channels, kernel_size=3, stride=1, padding=1)
         self.conv2 = conv2DBatchNormRelu(in_channels=in_channels, out_channels=in_channels, kernel_size=3, stride=1, padding=1)
         self.conv3 = conv2DBatchNormRelu(in_channels=in_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1)
         pass
@@ -209,6 +212,7 @@ class segnetUNetUp3(nn.Module):
         # print('concat_net.size():', concat_net.size())
         # print('x.size():', x.size())
         x = torch.cat([concat_net, x], 1)
+        # x = x + concat_net
         x = self.conv1(x)
         x = self.conv2(x)
         x = self.conv3(x)
@@ -367,3 +371,63 @@ class pyramidPooling(nn.Module):
 
         # 最后把[x, pool1_up, pool2_up, pool3_up, pool4_up] concat即可
         return torch.cat(output_slices, dim=1)
+
+
+class AlignedResInception(nn.Module):
+    """
+    Aligned残差Inception结构
+    """
+    def __init__(self, in_planes, stride=1):
+        super(AlignedResInception, self).__init__()
+        self.relu = nn.ReLU(inplace=True)
+        self.b1 = nn.Sequential(
+            nn.Conv2d(in_planes, in_planes//4, kernel_size=1, stride=1),
+            nn.BatchNorm2d(in_planes//4),
+            nn.ReLU(True),
+            nn.Conv2d(in_planes//4, in_planes//4, kernel_size=3, stride=1, padding=1),
+        )
+
+        self.b2 = nn.Sequential(
+            nn.Conv2d(in_planes, in_planes//8, kernel_size=1, stride=1),
+            nn.BatchNorm2d(in_planes//8),
+            nn.ReLU(True),
+            nn.Conv2d(in_planes//8, in_planes//8, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(in_planes//8),
+            nn.ReLU(True),
+            nn.Conv2d(in_planes//8, in_planes//8, kernel_size=3, stride=1, padding=1),
+        )
+
+        self.b3 = nn.Sequential(
+            nn.BatchNorm2d(in_planes//8*3),
+            nn.ReLU(True),
+        )
+
+        self.b4 = nn.Sequential(
+            nn.Conv2d(in_planes//8*3, in_planes, kernel_size=1, stride=stride),
+            nn.BatchNorm2d(in_planes),
+            nn.ReLU(True),
+        )
+
+        self.downsample = None
+        if stride>1:
+            self.downsample = nn.Sequential(
+                nn.Conv2d(in_planes, in_planes, kernel_size=1, stride=stride, bias=False),
+                nn.BatchNorm2d(in_planes),
+            )
+
+    def forward(self, x):
+        y1 = self.b1(x)
+        # print('y1.size():', y1.size())
+        y2 = self.b2(x)
+        # print('y2.size():', y2.size())
+        y3 = torch.cat([y1,y2], 1)
+        y3 = self.b3(y3)
+        # print('y3.size():', y3.size())
+        out = self.b4(y3)
+        # print('out.size():', out.size())
+        if self.downsample is not None:
+            out = out + self.downsample(x)
+        else:
+            out = out + x
+        out = self.relu(out)
+        return out

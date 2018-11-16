@@ -12,38 +12,42 @@ from torchvision import models
 from torchvision.models.squeezenet import Fire
 
 from semseg.loss import cross_entropy2d
-from semseg.modelloader.utils import segnetUNetDown2, segnetUNetDown3, segnetUNetUp2, segnetUNetUp3, conv2DBatchNormRelu
+from semseg.modelloader.utils import segnetUNetDown2, segnetUNetDown3, segnetUNetUp2, segnetUNetUp3, \
+    conv2DBatchNormRelu, segnetDown2, segnetUp2, segnetDown3, segnetUp3
 
 
 class segnet_unet(nn.Module):
     def __init__(self, n_classes=21, pretrained=False):
         super(segnet_unet, self).__init__()
-        self.down1 = segnetUNetDown2(3, 64)
-        self.down2 = segnetUNetDown2(64, 128)
-        self.down3 = segnetUNetDown3(128, 256)
+        # self.down1 = segnetUNetDown2(3, 64)
+        self.down1 = segnetDown2(3, 64)
+        # self.down2 = segnetUNetDown2(64, 128)
+        self.down2 = segnetDown2(64, 128)
+        self.down3 = segnetDown3(128, 256)
         self.down4 = segnetUNetDown3(256, 512)
         self.down5 = segnetUNetDown3(512, 512)
 
         self.up5 = segnetUNetUp3(512, 512)
         self.up4 = segnetUNetUp3(512, 256)
-        self.up3 = segnetUNetUp3(256, 128)
-        self.up2 = segnetUNetUp2(128, 64)
-        self.up1 = segnetUNetUp2(64, n_classes)
+        self.up3 = segnetUp3(256, 128)
+        self.up2 = segnetUp2(128, 64)
+        # self.up1 = segnetUNetUp2(64, n_classes)
+        self.up1 = segnetUp2(64, n_classes)
 
         self.init_vgg16(pretrained=pretrained)
 
     def forward(self, x):
-        x_down1, pool_indices1, unpool_shape1, x_undown1 = self.down1(x)
-        x_down2, pool_indices2, unpool_shape2, x_undown2 = self.down2(x_down1)
-        x_down3, pool_indices3, unpool_shape3, x_undown3 = self.down3(x_down2)
+        x_down1, pool_indices1, unpool_shape1 = self.down1(x)
+        x_down2, pool_indices2, unpool_shape2 = self.down2(x_down1)
+        x_down3, pool_indices3, unpool_shape3 = self.down3(x_down2)
         x_down4, pool_indices4, unpool_shape4, x_undown4 = self.down4(x_down3)
         x_down5, pool_indices5, unpool_shape5, x_undown5 = self.down5(x_down4)
 
         x_up5 = self.up5(x_down5, pool_indices=pool_indices5, unpool_shape=unpool_shape5, concat_net=x_undown5)
         x_up4 = self.up4(x_up5, pool_indices=pool_indices4, unpool_shape=unpool_shape4, concat_net=x_undown4)
-        x_up3 = self.up3(x_up4, pool_indices=pool_indices3, unpool_shape=unpool_shape3, concat_net=x_undown3)
-        x_up2 = self.up2(x_up3, pool_indices=pool_indices2, unpool_shape=unpool_shape2, concat_net=x_undown2)
-        x_up1 = self.up1(x_up2, pool_indices=pool_indices1, unpool_shape=unpool_shape1, concat_net=x_undown1)
+        x_up3 = self.up3(x_up4, pool_indices=pool_indices3, unpool_shape=unpool_shape3)
+        x_up2 = self.up2(x_up3, pool_indices=pool_indices2, unpool_shape=unpool_shape2)
+        x_up1 = self.up1(x_up2, pool_indices=pool_indices1, unpool_shape=unpool_shape1)
         return x_up1
 
     def init_vgg16(self, pretrained=False):
@@ -107,3 +111,4 @@ if __name__ == '__main__':
     # print(pred.shape)
     loss = cross_entropy2d(pred, y)
     # print(loss)
+    torch.save(model.state_dict(), '/tmp/tmp.pt')

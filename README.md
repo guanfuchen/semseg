@@ -65,15 +65,15 @@
 ---
 ### 网络实现
 
-- FCN，参考[fcn_understanding](doc/fcn_understanding.md)
-- RefineNet，参考[refinenet_understanging](doc/refinenet_understanging.md)
+- FCN，已实现，参考[fcn_understanding](doc/fcn_understanding.md)
+- RefineNet，已实现，参考[refinenet_understanging](doc/refinenet_understanging.md)
 - DUC，参考[duc_understanding](doc/duc_understanding.md)
-- DRN
+- DRN，已实现
 - PSPNet，参考[pspnet_understanding](doc/pspnet_understanding.md)
-- ENet
-- ErfNet
-- LinkNet，参考[pytorch-linknet](https://github.com/e-lab/pytorch-linknet)
-- FC-DenseNet，参考[fcdensenet_understanding](doc/fcdensenet_understanding.md)
+- ENet，已实现
+- ErfNet，已实现
+- LinkNet，已实现，参考[pytorch-linknet](https://github.com/e-lab/pytorch-linknet)
+- FC-DenseNet，已实现，参考[fcdensenet_understanding](doc/fcdensenet_understanding.md)
 - ...
 
 ---
@@ -218,3 +218,20 @@ SegNet was primarily motivated by scene understanding applications. Hence, it is
 | arXiv: 1511.00561 | Vijay Badrinarayanan, **Alex Kendall**, Roberto Cipolla | SegNet: A Deep Convolutional Encoder-Decoder Architecture for Image Segmentation | [caffe-segnet](https://github.com/alexgkendall/caffe-segnet) |
 
 本文提出的SegNet是应用最为广泛的架构，其中SegNet-VGG16在性能和精度上都获得了较大的提升，主要指出了解码器使用的反池化操作。
+
+![](https://chenguanfuqq.gitee.io/tuquan2/img_2018_5/segnet_1.png)
+
+---
+## U-Net: Convolutional Networks for Biomedical Image Segmentation
+
+| 摘要 |
+| ---- |
+| There is large consent that successful training of deep networks requires many thousand annotated training samples. In this paper, **we present a network and training strategy that relies on the strong use of data augmentation to use the available annotated samples more efficiently.** The architecture consists of a contracting path to capture context and a symmetric expanding path that enables precise localization. We show that such a network can be trained end-to-end from very few images and outperforms the prior best method (a sliding-window convolutional network) on the ISBI challenge for segmentation of neuronal structures in electron microscopic stacks. Using the same network trained on transmitted light microscopy images (phase contrast and DIC) we won the ISBI cell tracking challenge 2015 in these categories by a large margin. Moreover, the network is fast. Segmentation of a 512x512 image takes less than a second on a recent GPU. The full implementation (based on Caffee) and the trained networks are available at http://lmb.informatik.uni-freiburg.de/people/ronneber/u-net. |
+
+| 会议／期刊 | 作者 | 论文 | 代码 |
+| ---- | ---- | ---- | ---- |
+| arXiv: 1505.04597 | Olaf Ronneberger, Philipp Fischer, Thomas Brox | U-Net: Convolutional Networks for Biomedical Image Segmentation | [unet第三方](https://github.com/zhixuhao/unet) |
+
+本文提出的U-Net网络能够有效利用标注样本，通过a symmetric expanding path提升分割精度。
+
+![](https://chenguanfuqq.gitee.io/tuquan2/img_2018_5/unetseg_1.png)
