@@ -125,6 +125,11 @@ class fcn_resnet(nn.Module):
 
         self.classifier = nn.Conv2d(512 * block.expansion, self.n_classes, 1)
 
+        if self.module_type=='16s' or self.module_type=='8s':
+            self.score_pool4 = nn.Conv2d(256, self.n_classes, 1)
+        if self.module_type=='8s':
+            self.score_pool3 = nn.Conv2d(128, self.n_classes, 1)
+
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal(m.weight, mode='fan_out', nonlinearity='relu')
@@ -150,20 +155,32 @@ class fcn_resnet(nn.Module):
 
     def forward(self, x):
         x_size = x.size()[2:]
-        x = self.conv1(x)
-        x = self.bn1(x)
+        x_conv1 = self.conv1(x)
+        x = self.bn1(x_conv1)
         x = self.relu(x)
         x = self.maxpool(x)
 
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
+        x_layer1 = self.layer1(x)
+        x_layer2 = self.layer2(x_layer1)
+        x_layer3 = self.layer3(x_layer2)
+        x = self.layer4(x_layer3)
 
         # x = self.avgpool(x)
         # x = x.view(x.size(0), -1)
         # x = self.fc(x)
         score = self.classifier(x)
+
+        if self.module_type=='16s' or self.module_type=='8s':
+            score_pool4 = self.score_pool4(x_layer3)
+        if self.module_type=='8s':
+            score_pool3 = self.score_pool3(x_layer2)
+
+        if self.module_type=='16s' or self.module_type=='8s':
+            score = F.upsample_bilinear(score, score_pool4.size()[2:])
+            score += score_pool4
+        if self.module_type=='8s':
+            score = F.upsample_bilinear(score, score_pool3.size()[2:])
+            score += score_pool3
 
         out = F.upsample_bilinear(score, x_size)
 
@@ -173,6 +190,14 @@ class fcn_resnet(nn.Module):
         pretrain_model = None
         if model_name=='fcn_resnet18':
             pretrain_model = models.resnet18(pretrained=True)
+        elif model_name=='fcn_resnet34':
+            pretrain_model = models.resnet34(pretrained=True)
+        elif model_name=='fcn_resnet50':
+            pretrain_model = models.resnet50(pretrained=True)
+        elif model_name=='fcn_resnet101':
+            pretrain_model = models.resnet101(pretrained=True)
+        elif model_name=='fcn_resnet152':
+            pretrain_model = models.resnet152(pretrained=True)
         if pretrain_model is not None:
             self.conv1.weight.data = pretrain_model.conv1.weight.data
             if self.conv1.bias is not None:
@@ -231,6 +256,8 @@ def fcn_resnet34(module_type='32s', n_classes=21, pretrained=False):
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
     model = fcn_resnet(BasicBlock, [3, 4, 6, 3], module_type=module_type, n_classes=n_classes, pretrained=pretrained)
+    if pretrained:
+        model.initial_imagenet('fcn_resnet34')
     return model
 
 
@@ -240,6 +267,8 @@ def fcn_resnet50(module_type='32s', n_classes=21, pretrained=False):
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
     model = fcn_resnet(Bottleneck, [3, 4, 6, 3], module_type=module_type, n_classes=n_classes, pretrained=pretrained)
+    if pretrained:
+        model.initial_imagenet('fcn_resnet50')
     return model
 
 
@@ -249,6 +278,8 @@ def fcn_resnet101(module_type='32s', n_classes=21, pretrained=False):
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
     model = fcn_resnet(Bottleneck, [3, 4, 23, 3], module_type=module_type, n_classes=n_classes, pretrained=pretrained)
+    if pretrained:
+        model.initial_imagenet('fcn_resnet101')
     return model
 
 
@@ -258,14 +289,16 @@ def fcn_resnet152(module_type='32s', n_classes=21, pretrained=False):
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
     model = fcn_resnet(Bottleneck, [3, 8, 36, 3], module_type=module_type, n_classes=n_classes, pretrained=pretrained)
+    if pretrained:
+        model.initial_imagenet('fcn_resnet152')
     return model
 
 
 if __name__ == '__main__':
     n_classes = 21
     model_fcn32s = fcn_resnet18(module_type='32s', n_classes=n_classes, pretrained=True)
-    # model_fcn16s = fcn_resnet18(module_type='32s', n_classes=n_classes, pretrained=False)
-    # model_fcn8s = fcn_resnet18(module_type='32s', n_classes=n_classes, pretrained=False)
+    model_fcn16s = fcn_resnet18(module_type='16s', n_classes=n_classes, pretrained=True)
+    model_fcn8s = fcn_resnet18(module_type='8s', n_classes=n_classes, pretrained=True)
     # model.init_vgg16()
     x = Variable(torch.randn(1, 3, 360, 480))
     y = Variable(torch.LongTensor(np.ones((1, 360, 480), dtype=np.int)))
@@ -277,19 +310,19 @@ if __name__ == '__main__':
     print('pred.shape:', pred.shape)
     end = time.time()
     print(end-start)
-    #
-    # # ---------------------------fcn16s模型运行时间-----------------------
-    # start = time.time()
-    # pred = model_fcn16s(x)
-    # end = time.time()
-    # print(end-start)
-    #
-    # # ---------------------------fcn8s模型运行时间-----------------------
-    # start = time.time()
-    # pred = model_fcn8s(x)
-    # end = time.time()
-    # print(end-start)
-    #
-    # # print(pred.shape)
-    # loss = cross_entropy2d(pred, y)
-    # # print(loss)
+
+    # ---------------------------fcn16s模型运行时间-----------------------
+    start = time.time()
+    pred = model_fcn16s(x)
+    end = time.time()
+    print(end-start)
+
+    # ---------------------------fcn8s模型运行时间-----------------------
+    start = time.time()
+    pred = model_fcn8s(x)
+    end = time.time()
+    print(end-start)
+
+    # print(pred.shape)
+    loss = cross_entropy2d(pred, y)
+    # print(loss)

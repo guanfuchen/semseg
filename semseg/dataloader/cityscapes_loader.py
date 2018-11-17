@@ -247,3 +247,5 @@ if __name__ == '__main__':
         axarr[0].imshow(img)
         axarr[1].imshow(dst.decode_segmap(labels.numpy()[0]))
         plt.show()
+        if i==4:
+            break

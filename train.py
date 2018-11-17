@@ -19,7 +19,7 @@ from semseg.modelloader.enetv2 import ENetV2
 from semseg.modelloader.erfnet import erfnet
 from semseg.modelloader.fc_densenet import fcdensenet103, fcdensenet56
 from semseg.modelloader.fcn import fcn
-from semseg.modelloader.fcn_resnet import fcn_resnet18
+from semseg.modelloader.fcn_resnet import fcn_resnet18, fcn_resnet34
 from semseg.modelloader.pspnet import pspnet
 from semseg.modelloader.segnet import segnet, segnet_squeeze, segnet_alignres
 from semseg.modelloader.segnet_unet import segnet_unet
@@ -58,8 +58,18 @@ def train(args):
             model = fcn(module_type='16s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
         elif args.structure == 'fcn8s':
             model = fcn(module_type='8s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
-        if args.structure == 'fcn_resnet18_32s':
+        elif args.structure == 'fcn_resnet18_32s':
             model = fcn_resnet18(module_type='32s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
+        elif args.structure == 'fcn_resnet18_16s':
+            model = fcn_resnet18(module_type='16s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
+        elif args.structure == 'fcn_resnet18_8s':
+            model = fcn_resnet18(module_type='8s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
+        elif args.structure == 'fcn_resnet34_32s':
+            model = fcn_resnet34(module_type='32s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
+        elif args.structure == 'fcn_resnet34_16s':
+            model = fcn_resnet34(module_type='16s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
+        elif args.structure == 'fcn_resnet34_8s':
+            model = fcn_resnet34(module_type='8s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
         elif args.structure == 'ResNetDUC':
             model = ResNetDUC(n_classes=dst.n_classes, pretrained=args.init_vgg16)
         elif args.structure == 'ResNetDUCHDC':
@@ -209,8 +219,8 @@ if __name__=='__main__':
     parser.add_argument('--save_model', type=bool, default=False, help='save model [ False ]')
     parser.add_argument('--save_epoch', type=int, default=1, help='save model after epoch [ 1 ]')
     parser.add_argument('--init_vgg16', type=bool, default=False, help='init model using vgg16 weights [ False ]')
-    parser.add_argument('--dataset', type=str, default='CamVid', help='train dataset [ CamVid ]')
-    parser.add_argument('--dataset_path', type=str, default='~/Data/CamVid', help='train dataset path [ ~/Data/CamVid ]')
+    parser.add_argument('--dataset', type=str, default='CamVid', help='train dataset [ CamVid CityScapes ]')
+    parser.add_argument('--dataset_path', type=str, default='~/Data/CamVid', help='train dataset path [ ~/Data/CamVid ~/Data/cityscapes ]')
     parser.add_argument('--data_augment', type=bool, default=False, help='enlarge the training data [ False ]')
     parser.add_argument('--batch_size', type=int, default=1, help='train dataset batch size [ 1 ]')
     # parser.add_argument('--n_classes', type=int, default=13, help='train class num [ 13 ]')
