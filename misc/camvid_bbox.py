@@ -23,6 +23,7 @@ if __name__ == '__main__':
     img_width = 480
     img_height = 360
 
+    all_bbox_obj_name = []
     for img_name in file_list:
         object_det_bboxes = []
         # print(img_name)
@@ -47,7 +48,9 @@ if __name__ == '__main__':
                 ymin = int(int(bbox_obj_bndbox.find('ymin').text) * 1.0 / bbox_height * img_height)
                 xmax = int(int(bbox_obj_bndbox.find('xmax').text) * 1.0 / bbox_width * img_width)
                 ymax = int(int(bbox_obj_bndbox.find('ymax').text) * 1.0 / bbox_height * img_height)
-                print bbox_obj_name, xmin, ymin, xmax, ymax
+                # print bbox_obj_name, xmin, ymin, xmax, ymax
+                if bbox_obj_name not in all_bbox_obj_name:
+                    all_bbox_obj_name.append(bbox_obj_name)
                 object_det_bboxes.append([xmin, ymin, xmax, ymax, 0])
 
         for object_det_bbox in object_det_bboxes:
@@ -59,6 +62,9 @@ if __name__ == '__main__':
 
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         cv2.imshow('img', img)
-        cv2.waitKey(30)
+        key = cv2.waitKey()
+        # if key & 0xFF == ord('s'):
+        #     cv2.imwrite('/tmp/{}.png'.format(img_file_name), img)
         # plt.imshow(img)
         # plt.show()
+    print(all_bbox_obj_name)

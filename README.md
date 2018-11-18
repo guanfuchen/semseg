@@ -28,6 +28,7 @@
 - [pytorch-semseg](https://github.com/meetshah1995/pytorch-semseg)
 - [Semantic-Segmentation-Suite](https://github.com/GeorgeSeif/Semantic-Segmentation-Suite)，和pytorch对应的tensorflow语义分割框架实现。
 - [awesome-semantic-segmentation](https://github.com/mrgloom/awesome-semantic-segmentation)，语义分割的awesome系列。
+- [segmentation_models](https://github.com/qubvel/segmentation_models)，作者引入了不同backbones的不同分割模型组合，包括VGG16，VGG19，ResNet18，ResNet34，ResNet50，ResNet101，ResNet152和ResNeXt系列，DenseNet和Inception变种同UNet、LinkNet和PSPNet等结合，**进一步开发将包含多种的backbones**。
 - [Semantic Segmentation using Fully Convolutional Networks over the years](https://meetshah1995.github.io/semantic-segmentation/deep-learning/pytorch/visdom/2017/06/01/semantic-segmentation-over-the-years.html#sec_datasets)
 - [Fully Convolutional Networks for Semantic Segmentation](doc/fcn_understanding.md)
 - [dataset_loaders](https://github.com/fvisin/dataset_loaders) 实现了主要的数据集的加载，包括视频，图像

@@ -163,12 +163,12 @@ class cityscapesLoader(data.Dataset):
         img = m.imread(img_path)
         img = np.array(img, dtype=np.uint8)
 
-        # polygons_path = os.path.join(
-        #     self.annotations_base,
-        #     img_path.split(os.sep)[-2],
-        #     os.path.basename(img_path)[:-15] + "gtFine_polygons.json",
-        # )
-        #
+        polygons_path = os.path.join(
+            self.annotations_base,
+            img_path.split(os.sep)[-2],
+            os.path.basename(img_path)[:-15] + "gtFine_polygons.json",
+        )
+
         # import json
         # polygons_json = json.load(open(polygons_path, 'rb'))
         # object_det_bboxes = []
@@ -181,7 +181,7 @@ class cityscapesLoader(data.Dataset):
         #         # print(polygons_json_object_polygon)
         #         polygons_json_object_polygon_np = np.array(polygons_json_object_polygon)
         #         # print(polygons_json_object_polygon_np)
-        #         print(polygons_json_object_polygon_np.shape)
+        #         # print(polygons_json_object_polygon_np.shape)
         #         polygons_json_object_polygon_np_x = polygons_json_object_polygon_np[:, 0]
         #         polygons_json_object_polygon_np_y = polygons_json_object_polygon_np[:, 1]
         #         x1 = min(polygons_json_object_polygon_np_x)
@@ -190,7 +190,7 @@ class cityscapesLoader(data.Dataset):
         #         y2 = max(polygons_json_object_polygon_np_y)
         #         object_cls = 0
         #         object_det_bboxes.append([x1, y1, x2, y2, object_cls])
-
+        # 
         # for object_det_bbox in object_det_bboxes:
         #     import cv2
         #     x1 = object_det_bbox[0]
