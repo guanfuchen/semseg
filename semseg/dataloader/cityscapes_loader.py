@@ -163,6 +163,43 @@ class cityscapesLoader(data.Dataset):
         img = m.imread(img_path)
         img = np.array(img, dtype=np.uint8)
 
+        # polygons_path = os.path.join(
+        #     self.annotations_base,
+        #     img_path.split(os.sep)[-2],
+        #     os.path.basename(img_path)[:-15] + "gtFine_polygons.json",
+        # )
+        #
+        # import json
+        # polygons_json = json.load(open(polygons_path, 'rb'))
+        # object_det_bboxes = []
+        # # print(polygons_json['objects'])
+        # polygons_json_objects = polygons_json['objects']
+        # for polygons_json_object in polygons_json_objects:
+        #     polygons_json_object_polygon = polygons_json_object['polygon']
+        #     polygons_json_object_label = polygons_json_object['label']
+        #     if polygons_json_object_label in ['car', 'person']:
+        #         # print(polygons_json_object_polygon)
+        #         polygons_json_object_polygon_np = np.array(polygons_json_object_polygon)
+        #         # print(polygons_json_object_polygon_np)
+        #         print(polygons_json_object_polygon_np.shape)
+        #         polygons_json_object_polygon_np_x = polygons_json_object_polygon_np[:, 0]
+        #         polygons_json_object_polygon_np_y = polygons_json_object_polygon_np[:, 1]
+        #         x1 = min(polygons_json_object_polygon_np_x)
+        #         x2 = max(polygons_json_object_polygon_np_x)
+        #         y1 = min(polygons_json_object_polygon_np_y)
+        #         y2 = max(polygons_json_object_polygon_np_y)
+        #         object_cls = 0
+        #         object_det_bboxes.append([x1, y1, x2, y2, object_cls])
+
+        # for object_det_bbox in object_det_bboxes:
+        #     import cv2
+        #     x1 = object_det_bbox[0]
+        #     y1 = object_det_bbox[1]
+        #     x2 = object_det_bbox[2]
+        #     y2 = object_det_bbox[3]
+        #     cv2.rectangle(img, pt1=(x1, y1), pt2=(x2, y2), color=(255, 0, 0), thickness=5)
+
+
         lbl = m.imread(lbl_path)
         lbl = self.encode_segmap(np.array(lbl, dtype=np.uint8))
 
@@ -247,5 +284,5 @@ if __name__ == '__main__':
         axarr[0].imshow(img)
         axarr[1].imshow(dst.decode_segmap(labels.numpy()[0]))
         plt.show()
-        if i==4:
+        if i==3:
             break

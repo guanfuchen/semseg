@@ -21,7 +21,7 @@ from semseg.modelloader.fc_densenet import fcdensenet103, fcdensenet56
 from semseg.modelloader.fcn import fcn
 from semseg.modelloader.fcn_resnet import fcn_resnet18, fcn_resnet34
 from semseg.modelloader.pspnet import pspnet
-from semseg.modelloader.segnet import segnet, segnet_squeeze, segnet_alignres
+from semseg.modelloader.segnet import segnet, segnet_squeeze, segnet_alignres, segnet_vgg19
 from semseg.modelloader.segnet_unet import segnet_unet
 from semseg.modelloader.sqnet import sqnet
 
@@ -76,6 +76,8 @@ def train(args):
             model = ResNetDUCHDC(n_classes=dst.n_classes, pretrained=args.init_vgg16)
         elif args.structure == 'segnet':
             model = segnet(n_classes=dst.n_classes, pretrained=args.init_vgg16)
+        elif args.structure == 'segnet_vgg19':
+            model = segnet_vgg19(n_classes=dst.n_classes, pretrained=args.init_vgg16)
         elif args.structure == 'segnet_unet':
             model = segnet_unet(n_classes=dst.n_classes, pretrained=args.init_vgg16)
         elif args.structure == 'segnet_alignres':
@@ -126,6 +128,7 @@ def train(args):
         model.cuda()
     print('start_epoch:', start_epoch)
     optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr, momentum=0.99, weight_decay=5e-4)
+    # optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, betas=(0.9, 0.999), eps=1e-08, weight_decay=1e-4)
     for epoch in range(start_epoch+1, 20000, 1):
         loss_epoch = 0
         loss_avg_epoch = 0

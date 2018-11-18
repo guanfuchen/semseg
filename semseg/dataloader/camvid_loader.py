@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
+import torch
 import os
 import collections
 import random
 
-import torch
+import cv2
 import numpy as np
 import scipy.misc as m
 import matplotlib.pyplot as plt
 from PIL import Image
 from torch.utils import data
 from torchvision import transforms
+import glob
 
 from semseg.dataloader.utils import Compose, RandomHorizontallyFlip, RandomRotate
 
@@ -32,7 +34,8 @@ class camvidLoader(data.Dataset):
                 # transforms.ToTensor()
             ])
 
-        file_list = os.listdir(root + '/' + split)
+        # file_list = os.listdir(root + '/' + split)
+        file_list = glob.glob(root + '/' + split + '/*.png')
         file_list.sort()
         self.files[split] = file_list
 
@@ -41,12 +44,11 @@ class camvidLoader(data.Dataset):
 
     def __getitem__(self, index):
         img_name = self.files[self.split][index]
-        img_file_name = img_name[:img_name.rfind('.')]
+        img_file_name = img_name[img_name.rfind('/')+1:img_name.rfind('.')]
+        # img_file_name = img_name[:img_name.rfind('.')]
         # print(img_file_name)
-        img_path = self.root + '/' + self.split + '/' + img_name
-        lbl_path = self.root + '/' + self.split + 'annot/' + img_name
-        import glob
-        lbl_path = glob.glob(self.root + '/' + self.split + 'annot/' + img_file_name + '*.png')[0]
+        img_path = self.root + '/' + self.split + '/' + img_file_name + '.png'
+        lbl_path = self.root + '/' + self.split + 'annot/' + img_file_name + '.png'
 
         img = Image.open(img_path)
         lbl = Image.open(lbl_path)
@@ -57,6 +59,33 @@ class camvidLoader(data.Dataset):
 
         img = np.array(img, dtype=np.uint8)
         lbl = np.array(lbl, dtype=np.int32)
+
+        # bbox_path = self.root + '/' + self.split + 'bbox/' + img_file_name + '.xml'
+        # object_det_bboxes = []
+        # import xml.etree.ElementTree as ET
+        # if os.path.exists(bbox_path):
+        #     print(bbox_path)
+        #     bbox_tree = ET.parse(bbox_path)
+        #     bbox_root = bbox_tree.getroot()
+        #
+        #     for bbox_obj in bbox_root.findall('object'):
+        #         bbox_obj_name = bbox_obj.find('name').text
+        #         if bbox_obj_name not in ['Car']:
+        #             continue
+        #         bbox_obj_bndbox = bbox_obj.find('bndbox')
+        #         xmin = int(bbox_obj_bndbox.find('xmin').text)
+        #         ymin = int(bbox_obj_bndbox.find('ymin').text)
+        #         xmax = int(bbox_obj_bndbox.find('xmax').text)
+        #         ymax = int(bbox_obj_bndbox.find('ymax').text)
+        #         print bbox_obj_name, xmin, ymin, xmax, ymax
+        #         object_det_bboxes.append([xmin, ymin, xmax, ymax, 0])
+        #
+        # for object_det_bbox in object_det_bboxes:
+        #     xmin = object_det_bbox[0]
+        #     ymin = object_det_bbox[1]
+        #     xmax = object_det_bbox[2]
+        #     ymax = object_det_bbox[3]
+        #     cv2.rectangle(img, pt1=(xmin, ymin), pt2=(xmax, ymax), color=(255, 0, 0), thickness=5)
 
         if self.is_transform:
             img, lbl = self.transform(img, lbl)
@@ -116,8 +145,8 @@ if __name__ == '__main__':
     HOME_PATH = os.path.expanduser('~')
     local_path = os.path.join(HOME_PATH, 'Data/CamVid')
     batch_size = 4
-    dst = camvidLoader(local_path, is_transform=True, is_augment=True)
-    trainloader = data.DataLoader(dst, batch_size=batch_size)
+    dst = camvidLoader(local_path, is_transform=True, is_augment=False)
+    trainloader = data.DataLoader(dst, batch_size=batch_size, shuffle=True)
     for i, (imgs, labels) in enumerate(trainloader):
         print(i)
         print(imgs.shape)
@@ -134,3 +163,5 @@ if __name__ == '__main__':
             plt.imshow(dst.decode_segmap(labels.numpy()[image_list]))
             # print(dst.decode_segmap(labels.numpy()[image_list])[0, 0, :])
         plt.show()
+        if i==0:
+            break
