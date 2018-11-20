@@ -469,3 +469,158 @@ class AlignedResInception(nn.Module):
             out = out + x
         out = self.relu(out)
         return out
+
+class Inception(nn.Module):
+    def __init__(self, in_planes, n1x1, n3x3red, n3x3, n5x5red, n5x5, pool_planes):
+        super(Inception, self).__init__()
+        # 1x1 conv branch
+        self.b1 = nn.Sequential(
+            nn.Conv2d(in_planes, n1x1, kernel_size=1),
+            nn.BatchNorm2d(n1x1),
+            nn.ReLU(True),
+        )
+
+        # 1x1 conv -> 3x3 conv branch
+        self.b2 = nn.Sequential(
+            nn.Conv2d(in_planes, n3x3red, kernel_size=1),
+            nn.BatchNorm2d(n3x3red),
+            nn.ReLU(True),
+            nn.Conv2d(n3x3red, n3x3, kernel_size=3, padding=1),
+            nn.BatchNorm2d(n3x3),
+            nn.ReLU(True),
+        )
+
+        # 1x1 conv -> 5x5 conv branch
+        self.b3 = nn.Sequential(
+            nn.Conv2d(in_planes, n5x5red, kernel_size=1),
+            nn.BatchNorm2d(n5x5red),
+            nn.ReLU(True),
+            nn.Conv2d(n5x5red, n5x5, kernel_size=3, padding=1),
+            nn.BatchNorm2d(n5x5),
+            nn.ReLU(True),
+            nn.Conv2d(n5x5, n5x5, kernel_size=3, padding=1),
+            nn.BatchNorm2d(n5x5),
+            nn.ReLU(True),
+        )
+
+        # 3x3 pool -> 1x1 conv branch
+        self.b4 = nn.Sequential(
+            nn.MaxPool2d(3, stride=1, padding=1),
+            nn.Conv2d(in_planes, pool_planes, kernel_size=1),
+            nn.BatchNorm2d(pool_planes),
+            nn.ReLU(True),
+        )
+
+    def forward(self, x):
+        y1 = self.b1(x)
+        y2 = self.b2(x)
+        y3 = self.b3(x)
+        y4 = self.b4(x)
+        return torch.cat([y1,y2,y3,y4], 1)
+
+class ResInception(nn.Module):
+    def __init__(self, in_planes, n1x1, n3x3red, n3x3, n5x5red, n5x5, pool_planes, stride=1):
+        super(ResInception, self).__init__()
+        self.relu = nn.ReLU(inplace=True)
+        # 1x1 conv branch
+        self.b1 = nn.Sequential(
+            nn.Conv2d(in_planes, n1x1, kernel_size=1, stride=stride),
+            nn.BatchNorm2d(n1x1),
+            nn.ReLU(True),
+        )
+
+        # 1x1 conv -> 3x3 conv branch
+        self.b2 = nn.Sequential(
+            nn.Conv2d(in_planes, n3x3red, kernel_size=1, stride=stride),
+            nn.BatchNorm2d(n3x3red),
+            nn.ReLU(True),
+            nn.Conv2d(n3x3red, n3x3, kernel_size=3, padding=1),
+            nn.BatchNorm2d(n3x3),
+            nn.ReLU(True),
+        )
+
+        # 1x1 conv -> 5x5 conv branch
+        self.b3 = nn.Sequential(
+            nn.Conv2d(in_planes, n5x5red, kernel_size=1, stride=stride),
+            nn.BatchNorm2d(n5x5red),
+            nn.ReLU(True),
+            nn.Conv2d(n5x5red, n5x5, kernel_size=3, padding=1),
+            nn.BatchNorm2d(n5x5),
+            nn.ReLU(True),
+            nn.Conv2d(n5x5, n5x5, kernel_size=3, padding=1),
+            nn.BatchNorm2d(n5x5),
+            nn.ReLU(True),
+        )
+
+        # 3x3 pool -> 1x1 conv branch
+        self.b4 = nn.Sequential(
+            nn.MaxPool2d(3, stride=stride, padding=1),
+            nn.Conv2d(in_planes, pool_planes, kernel_size=1),
+            nn.BatchNorm2d(pool_planes),
+            nn.ReLU(True),
+        )
+
+        self.downsample = None
+        if stride>1:
+            self.downsample = nn.Sequential(
+                nn.Conv2d(in_planes, in_planes, kernel_size=1, stride=stride, bias=False),
+                nn.BatchNorm2d(in_planes),
+            )
+
+    def forward(self, x):
+        y1 = self.b1(x)
+        y2 = self.b2(x)
+        y3 = self.b3(x)
+        y4 = self.b4(x)
+        out = torch.cat([y1,y2,y3,y4], 1)
+        if self.downsample is not None:
+            out = out + self.downsample(x)
+        else:
+            out = out + x
+        out = self.relu(out)
+        return out
+
+
+class CascadeResInception(nn.Module):
+    def __init__(self):
+        super(CascadeResInception, self).__init__()
+        self.relu = nn.ReLU(inplace=True)
+        self.res1 = ResInception(512, 128, 128, 256, 24,  64,  64, stride=2)
+        self.res2 = ResInception(512, 128, 128, 256, 24,  64,  64, stride=7)
+        self.res3 = ResInception(512, 128, 128, 256, 24,  64,  64, stride=14)
+
+    def forward(self, x):
+        y1 = self.res1(x)
+        y2 = self.res2(x)
+        y3 = self.res3(x)
+        # print('y1:', y1.size())
+        # print('y2:', y2.size())
+        # print('y3:', y3.size())
+        y1 = F.upsample_bilinear(y1, x.size()[2:])
+        y2 = F.upsample_bilinear(y2, x.size()[2:])
+        y3 = F.upsample_bilinear(y3, x.size()[2:])
+        out = x + y1 + y2 + y3
+        out = self.relu(out)
+        return out
+
+class CascadeAlignedResInception(nn.Module):
+    def __init__(self, in_planes):
+        super(CascadeAlignedResInception, self).__init__()
+        self.relu = nn.ReLU(inplace=True)
+        self.res1 = AlignedResInception(in_planes=in_planes, stride=2)
+        self.res2 = AlignedResInception(in_planes=in_planes, stride=7)
+        self.res3 = AlignedResInception(in_planes=in_planes, stride=14)
+
+    def forward(self, x):
+        y1 = self.res1(x)
+        y2 = self.res2(x)
+        y3 = self.res3(x)
+        # print('y1:', y1.size())
+        # print('y2:', y2.size())
+        # print('y3:', y3.size())
+        y1 = F.upsample_bilinear(y1, x.size()[2:])
+        y2 = F.upsample_bilinear(y2, x.size()[2:])
+        y3 = F.upsample_bilinear(y3, x.size()[2:])
+        out = x + y1 + y2 + y3
+        out = self.relu(out)
+        return out

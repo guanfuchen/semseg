@@ -10,3 +10,4 @@
 - 增加crf后处理
 - 当前仅仅是按照时间存储模型，设计一种能在校验集中精度提升的储存思路
 - 将预测结果和原图blend更为精确的显示
+- 增加多个类似每一个数据集，每一个模型，Mean IU和Pixel Accuracy等评估性能，可参考[segmentation-experiments](https://github.com/wondervictor/segmentation-experiments)。

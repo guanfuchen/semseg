@@ -13,176 +13,22 @@ from torch.autograd import Variable
 from torchvision import models
 
 from semseg.loss import cross_entropy2d
-
-# webroot = 'https://tigress-web.princeton.edu/~fy/drn/models/'
-#
-# model_urls = {
-#     'drn-c-26': webroot + 'drn_c_26-ddedf421.pth',
-#     'drn-c-42': webroot + 'drn_c_42-9d336e8c.pth',
-#     'drn-c-58': webroot + 'drn_c_58-0a53a92c.pth',
-#     'drn-d-22': webroot + 'drn_d_22-4bd2f8ea.pth',
-#     'drn-d-38': webroot + 'drn_d_38-eebb45f0.pth',
-#     'drn-d-54': webroot + 'drn_d_54-0e0534ff.pth',
-#     'drn-d-105': webroot + 'drn_d_105-12b40979.pth'
-# }
 from semseg.modelloader.utils import AlignedResInception
-from semseg.pytorch_modelsize import SizeEstimator
+# from semseg.pytorch_modelsize import SizeEstimator
 
+webroot = 'https://tigress-web.princeton.edu/~fy/drn/models/'
 
-class Inception(nn.Module):
-    def __init__(self, in_planes, n1x1, n3x3red, n3x3, n5x5red, n5x5, pool_planes):
-        super(Inception, self).__init__()
-        # 1x1 conv branch
-        self.b1 = nn.Sequential(
-            nn.Conv2d(in_planes, n1x1, kernel_size=1),
-            nn.BatchNorm2d(n1x1),
-            nn.ReLU(True),
-        )
+model_urls = {
+    'resnet50': 'https://download.pytorch.org/models/resnet50-19c8e357.pth',
+    'drn-c-26': webroot + 'drn_c_26-ddedf421.pth',
+    'drn-c-42': webroot + 'drn_c_42-9d336e8c.pth',
+    'drn-c-58': webroot + 'drn_c_58-0a53a92c.pth',
+    'drn-d-22': webroot + 'drn_d_22-4bd2f8ea.pth',
+    'drn-d-38': webroot + 'drn_d_38-eebb45f0.pth',
+    'drn-d-54': webroot + 'drn_d_54-0e0534ff.pth',
+    'drn-d-105': webroot + 'drn_d_105-12b40979.pth'
+}
 
-        # 1x1 conv -> 3x3 conv branch
-        self.b2 = nn.Sequential(
-            nn.Conv2d(in_planes, n3x3red, kernel_size=1),
-            nn.BatchNorm2d(n3x3red),
-            nn.ReLU(True),
-            nn.Conv2d(n3x3red, n3x3, kernel_size=3, padding=1),
-            nn.BatchNorm2d(n3x3),
-            nn.ReLU(True),
-        )
-
-        # 1x1 conv -> 5x5 conv branch
-        self.b3 = nn.Sequential(
-            nn.Conv2d(in_planes, n5x5red, kernel_size=1),
-            nn.BatchNorm2d(n5x5red),
-            nn.ReLU(True),
-            nn.Conv2d(n5x5red, n5x5, kernel_size=3, padding=1),
-            nn.BatchNorm2d(n5x5),
-            nn.ReLU(True),
-            nn.Conv2d(n5x5, n5x5, kernel_size=3, padding=1),
-            nn.BatchNorm2d(n5x5),
-            nn.ReLU(True),
-        )
-
-        # 3x3 pool -> 1x1 conv branch
-        self.b4 = nn.Sequential(
-            nn.MaxPool2d(3, stride=1, padding=1),
-            nn.Conv2d(in_planes, pool_planes, kernel_size=1),
-            nn.BatchNorm2d(pool_planes),
-            nn.ReLU(True),
-        )
-
-    def forward(self, x):
-        y1 = self.b1(x)
-        y2 = self.b2(x)
-        y3 = self.b3(x)
-        y4 = self.b4(x)
-        return torch.cat([y1,y2,y3,y4], 1)
-
-class ResInception(nn.Module):
-    def __init__(self, in_planes, n1x1, n3x3red, n3x3, n5x5red, n5x5, pool_planes, stride=1):
-        super(ResInception, self).__init__()
-        self.relu = nn.ReLU(inplace=True)
-        # 1x1 conv branch
-        self.b1 = nn.Sequential(
-            nn.Conv2d(in_planes, n1x1, kernel_size=1, stride=stride),
-            nn.BatchNorm2d(n1x1),
-            nn.ReLU(True),
-        )
-
-        # 1x1 conv -> 3x3 conv branch
-        self.b2 = nn.Sequential(
-            nn.Conv2d(in_planes, n3x3red, kernel_size=1, stride=stride),
-            nn.BatchNorm2d(n3x3red),
-            nn.ReLU(True),
-            nn.Conv2d(n3x3red, n3x3, kernel_size=3, padding=1),
-            nn.BatchNorm2d(n3x3),
-            nn.ReLU(True),
-        )
-
-        # 1x1 conv -> 5x5 conv branch
-        self.b3 = nn.Sequential(
-            nn.Conv2d(in_planes, n5x5red, kernel_size=1, stride=stride),
-            nn.BatchNorm2d(n5x5red),
-            nn.ReLU(True),
-            nn.Conv2d(n5x5red, n5x5, kernel_size=3, padding=1),
-            nn.BatchNorm2d(n5x5),
-            nn.ReLU(True),
-            nn.Conv2d(n5x5, n5x5, kernel_size=3, padding=1),
-            nn.BatchNorm2d(n5x5),
-            nn.ReLU(True),
-        )
-
-        # 3x3 pool -> 1x1 conv branch
-        self.b4 = nn.Sequential(
-            nn.MaxPool2d(3, stride=stride, padding=1),
-            nn.Conv2d(in_planes, pool_planes, kernel_size=1),
-            nn.BatchNorm2d(pool_planes),
-            nn.ReLU(True),
-        )
-
-        self.downsample = None
-        if stride>1:
-            self.downsample = nn.Sequential(
-                nn.Conv2d(in_planes, in_planes, kernel_size=1, stride=stride, bias=False),
-                nn.BatchNorm2d(in_planes),
-            )
-
-    def forward(self, x):
-        y1 = self.b1(x)
-        y2 = self.b2(x)
-        y3 = self.b3(x)
-        y4 = self.b4(x)
-        out = torch.cat([y1,y2,y3,y4], 1)
-        if self.downsample is not None:
-            out = out + self.downsample(x)
-        else:
-            out = out + x
-        out = self.relu(out)
-        return out
-
-
-class CascadeResInception(nn.Module):
-    def __init__(self):
-        super(CascadeResInception, self).__init__()
-        self.relu = nn.ReLU(inplace=True)
-        self.res1 = ResInception(512, 128, 128, 256, 24,  64,  64, stride=2)
-        self.res2 = ResInception(512, 128, 128, 256, 24,  64,  64, stride=7)
-        self.res3 = ResInception(512, 128, 128, 256, 24,  64,  64, stride=14)
-
-    def forward(self, x):
-        y1 = self.res1(x)
-        y2 = self.res2(x)
-        y3 = self.res3(x)
-        # print('y1:', y1.size())
-        # print('y2:', y2.size())
-        # print('y3:', y3.size())
-        y1 = F.upsample_bilinear(y1, x.size()[2:])
-        y2 = F.upsample_bilinear(y2, x.size()[2:])
-        y3 = F.upsample_bilinear(y3, x.size()[2:])
-        out = x + y1 + y2 + y3
-        out = self.relu(out)
-        return out
-
-class CascadeAlignedResInception(nn.Module):
-    def __init__(self, in_planes):
-        super(CascadeAlignedResInception, self).__init__()
-        self.relu = nn.ReLU(inplace=True)
-        self.res1 = AlignedResInception(in_planes=in_planes, stride=2)
-        self.res2 = AlignedResInception(in_planes=in_planes, stride=7)
-        self.res3 = AlignedResInception(in_planes=in_planes, stride=14)
-
-    def forward(self, x):
-        y1 = self.res1(x)
-        y2 = self.res2(x)
-        y3 = self.res3(x)
-        # print('y1:', y1.size())
-        # print('y2:', y2.size())
-        # print('y3:', y3.size())
-        y1 = F.upsample_bilinear(y1, x.size()[2:])
-        y2 = F.upsample_bilinear(y2, x.size()[2:])
-        y3 = F.upsample_bilinear(y3, x.size()[2:])
-        out = x + y1 + y2 + y3
-        out = self.relu(out)
-        return out
 
 def conv3x3(in_planes, out_planes, stride=1, padding=1, dilation=1):
     return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
@@ -304,10 +150,10 @@ class DRN(nn.Module):
         self.layer6 = None if layers[5] == 0 else self._make_layer(block, channels[5], layers[5], dilation=4, new_level=False)
 
         if arch == 'C':
+            # 无残差模块
             self.layer7 = None if layers[6] == 0 else self._make_layer(BasicBlock, channels[6], layers[6], dilation=2, new_level=False, residual=False)
             self.layer8 = None if layers[7] == 0 else self._make_layer(BasicBlock, channels[7], layers[7], dilation=1, new_level=False, residual=False)
         elif arch == 'D' or arch == 'E':
-            # 无残差模块
             self.layer7 = None if layers[6] == 0 else self._make_conv_layers(channels[6], layers[6], dilation=2)
             self.layer8 = None if layers[7] == 0 else self._make_conv_layers(channels[7], layers[7], dilation=1)
 
@@ -501,11 +347,79 @@ def drn_a_18(pretrained=False, **kwargs):
         model.load_state_dict(model_zoo.load_url('https://s3.amazonaws.com/pytorch/models/resnet18-5c106cde.pth'))
     return model
 
+def drn_c_26(pretrained=False, **kwargs):
+    model = DRN(BasicBlock, [1, 1, 2, 2, 2, 2, 1, 1], arch='C', **kwargs)
+    # if pretrained:
+    #     model.load_state_dict(model_zoo.load_url(model_urls['drn-c-26']))
+    return model
+
+
+def drn_c_42(pretrained=False, **kwargs):
+    model = DRN(BasicBlock, [1, 1, 3, 4, 6, 3, 1, 1], arch='C', **kwargs)
+    # if pretrained:
+    #     model.load_state_dict(model_zoo.load_url(model_urls['drn-c-42']))
+    return model
+
+
+def drn_c_58(pretrained=False, **kwargs):
+    model = DRN(Bottleneck, [1, 1, 3, 4, 6, 3, 1, 1], arch='C', **kwargs)
+    # if pretrained:
+    #     model.load_state_dict(model_zoo.load_url(model_urls['drn-c-58']))
+    return model
+
 # drn变种22
 def drn_d_22(pretrained=False, **kwargs):
     model = DRN(BasicBlock, [1, 1, 2, 2, 2, 2, 1, 1], arch='D', **kwargs)
     # if pretrained:
     #     model.load_state_dict(model_zoo.load_url(model_urls['drn-d-22']))
+    return model
+
+def drn_d_24(pretrained=False, **kwargs):
+    model = DRN(BasicBlock, [1, 1, 2, 2, 2, 2, 2, 2], arch='D', **kwargs)
+    # if pretrained:
+    #     model.load_state_dict(model_zoo.load_url(model_urls['drn-d-24']))
+    return model
+
+
+def drn_d_38(pretrained=False, **kwargs):
+    model = DRN(BasicBlock, [1, 1, 3, 4, 6, 3, 1, 1], arch='D', **kwargs)
+    # if pretrained:
+    #     model.load_state_dict(model_zoo.load_url(model_urls['drn-d-38']))
+    return model
+
+
+def drn_d_40(pretrained=False, **kwargs):
+    model = DRN(BasicBlock, [1, 1, 3, 4, 6, 3, 2, 2], arch='D', **kwargs)
+    # if pretrained:
+    #     model.load_state_dict(model_zoo.load_url(model_urls['drn-d-40']))
+    return model
+
+
+def drn_d_54(pretrained=False, **kwargs):
+    model = DRN(Bottleneck, [1, 1, 3, 4, 6, 3, 1, 1], arch='D', **kwargs)
+    # if pretrained:
+    #     model.load_state_dict(model_zoo.load_url(model_urls['drn-d-54']))
+    return model
+
+
+def drn_d_56(pretrained=False, **kwargs):
+    model = DRN(Bottleneck, [1, 1, 3, 4, 6, 3, 2, 2], arch='D', **kwargs)
+    # if pretrained:
+    #     model.load_state_dict(model_zoo.load_url(model_urls['drn-d-56']))
+    return model
+
+
+def drn_d_105(pretrained=False, **kwargs):
+    model = DRN(Bottleneck, [1, 1, 3, 4, 23, 3, 1, 1], arch='D', **kwargs)
+    # if pretrained:
+    #     model.load_state_dict(model_zoo.load_url(model_urls['drn-d-105']))
+    return model
+
+
+def drn_d_107(pretrained=False, **kwargs):
+    model = DRN(Bottleneck, [1, 1, 3, 4, 23, 3, 2, 2], arch='D', **kwargs)
+    # if pretrained:
+    #     model.load_state_dict(model_zoo.load_url(model_urls['drn-d-107']))
     return model
 
 # drn变种22
@@ -531,14 +445,15 @@ class DRNSeg(nn.Module):
     def __init__(self, model_name, n_classes, pretrained=False, use_torch_up=False):
         super(DRNSeg, self).__init__()
         # DRN分割模型不同变种
-        if model_name=='drn_d_22':
-            model = drn_d_22(pretrained=pretrained, num_classes=1000)
-        if model_name=='drn_a_50':
-            model = drn_a_50(pretrained=pretrained, num_classes=1000)
-        if model_name=='drn_a_18':
-            model = drn_a_18(pretrained=pretrained, num_classes=1000)
-        if model_name=='drn_e_22':
-            model = drn_e_22(pretrained=pretrained, num_classes=1000)
+        # if model_name=='drn_d_22':
+        #     model = drn_d_22(pretrained=pretrained, num_classes=1000)
+        # if model_name=='drn_a_50':
+        #     model = drn_a_50(pretrained=pretrained, num_classes=1000)
+        # if model_name=='drn_a_18':
+        #     model = drn_a_18(pretrained=pretrained, num_classes=1000)
+        # if model_name=='drn_e_22':
+        #     model = drn_e_22(pretrained=pretrained, num_classes=1000)
+        model = eval(model_name)(pretrained=pretrained, num_classes=1000)
         # pmodel = nn.DataParallel(model)
         # if pretrained_model is not None:
             # pmodel.load_state_dict(pretrained_model)
@@ -582,7 +497,7 @@ class DRNSeg(nn.Module):
 
 if __name__ == '__main__':
     n_classes = 21
-    model = DRNSeg(model_name='drn_d_22', n_classes=n_classes, pretrained=False)
+    model = DRNSeg(model_name='drn_c_26', n_classes=n_classes, pretrained=False)
     # model.eval()
     # model.init_vgg16()
     x = Variable(torch.randn(1, 3, 360, 480))
