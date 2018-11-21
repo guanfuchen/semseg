@@ -29,3 +29,4 @@ DeepLab系列是针对Semantic Segmentation任务提出的一系列模型，主�
 - [deeplab Tensorflow](https://github.com/tensorflow/models/tree/master/research/deeplab)，该系列文章的TF官方实现，托管在TF Models中。
 - [DeepLab: Semantic Image Segmentation with Deep Convolutional Nets, Atrous Convolution, and Fully Connected CRFs](http://liangchiehchen.com/projects/DeepLab.html) DeepLab项目官网。
 - [deeplab-pytorch](https://github.com/kazuto1011/deeplab-pytorch)和[pytorch-deeplab-xception](https://github.com/jfzhang95/pytorch-deeplab-xception)deeplab pytorch实现。
+- [Deeplab Image Semantic Segmentation Network](https://sthalles.github.io/deep_segmentation_network/)，论文中对Deeplab以及语义分割发展和常用的结构进行了介绍。

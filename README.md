@@ -64,6 +64,7 @@
 - Characterizing Adversarial Examples Based on Spatial Consistency Information for Semantic Segmentation
 - UOLO - automatic object detection and segmentation in biomedical images，联合目标检测和语义分割的框架，可以参考借鉴。
 - 弱监督语义分割，参考如下。
+- CGNet: A Light-weight Context Guided Network for Semantic Segmentation
 
 ---
 ## 弱监督语义分割

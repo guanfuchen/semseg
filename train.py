@@ -20,7 +20,6 @@ from semseg.modelloader.erfnet import erfnet
 from semseg.modelloader.fc_densenet import fcdensenet103, fcdensenet56
 from semseg.modelloader.fcn import fcn
 from semseg.modelloader.fcn_resnet import fcn_resnet18, fcn_resnet34
-from semseg.modelloader.pspnet import pspnet
 from semseg.modelloader.segnet import segnet, segnet_squeeze, segnet_alignres, segnet_vgg19
 from semseg.modelloader.segnet_unet import segnet_unet
 from semseg.modelloader.sqnet import sqnet
@@ -98,8 +97,6 @@ def train(args):
             model = DRNSeg(model_name='drn_a_18', n_classes=dst.n_classes, pretrained=args.init_vgg16)
         elif args.structure == 'drn_e_22':
             model = DRNSeg(model_name='drn_e_22', n_classes=dst.n_classes, pretrained=args.init_vgg16)
-        elif args.structure == 'pspnet':
-            model = pspnet(n_classes=dst.n_classes)
         elif args.structure == 'erfnet':
             model = erfnet(n_classes=dst.n_classes)
         elif args.structure == 'fcdensenet103':

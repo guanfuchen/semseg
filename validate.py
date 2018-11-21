@@ -19,7 +19,6 @@ from semseg.modelloader.enet import ENet
 from semseg.modelloader.fcn import fcn
 from semseg.modelloader.segnet import segnet
 from semseg.modelloader.erfnet import erfnet
-from semseg.modelloader.pspnet import pspnet
 
 
 def validate(args):
@@ -53,8 +52,6 @@ def validate(args):
             model = ENet(n_classes=dst.n_classes)
         elif args.structure == 'drn_d_22':
             model = DRNSeg(model_name='drn_d_22', n_classes=dst.n_classes)
-        elif args.structure == 'pspnet':
-            model = pspnet(n_classes=dst.n_classes, use_aux=False)
         elif args.structure == 'erfnet':
             model = erfnet(n_classes=dst.n_classes)
         if args.validate_model_state_dict != '':
