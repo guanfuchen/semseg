@@ -12,6 +12,7 @@ from torch.autograd import Variable
 from semseg.dataloader.camvid_loader import camvidLoader
 from semseg.dataloader.cityscapes_loader import cityscapesLoader
 from semseg.loss import cross_entropy2d
+from semseg.modelloader.deeplabv3 import Res_Deeplab_101, Res_Deeplab_50
 from semseg.modelloader.drn import drn_d_22, DRNSeg
 from semseg.modelloader.duc_hdc import ResNetDUC, ResNetDUCHDC
 from semseg.modelloader.enet import ENet
@@ -110,6 +111,10 @@ def train(args):
             model = fcdensenet103(n_classes=dst.n_classes)
         elif args.structure == 'fcdensenet56':
             model = fcdensenet56(n_classes=dst.n_classes)
+        elif args.structure == 'Res_Deeplab_101':
+            model = Res_Deeplab_101(n_classes=dst.n_classes, is_refine=False)
+        elif args.structure == 'Res_Deeplab_50':
+            model = Res_Deeplab_50(n_classes=dst.n_classes, is_refine=False)
         if args.resume_model_state_dict != '':
             try:
                 # fcn32s、fcn16s和fcn8s模型略有增加参数，互相赋值重新训练过程中会有KeyError，暂时捕捉异常处理
@@ -160,6 +165,7 @@ def train(args):
                 imgs = imgs.cuda()
                 labels = labels.cuda()
             outputs = model(imgs)
+            # print('type(outputs):', type(outputs))
 
             if args.vis and i%50==0:
                 pred_labels = outputs.cpu().data.max(1)[1].numpy()

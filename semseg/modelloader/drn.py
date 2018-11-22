@@ -498,6 +498,7 @@ class DRNSeg(nn.Module):
 if __name__ == '__main__':
     n_classes = 21
     model = DRNSeg(model_name='drn_c_26', n_classes=n_classes, pretrained=False)
+    # model = DRNSeg(model_name='drn_d_22', n_classes=n_classes, pretrained=False)
     # model.eval()
     # model.init_vgg16()
     x = Variable(torch.randn(1, 3, 360, 480))
