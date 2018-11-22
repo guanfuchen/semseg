@@ -105,10 +105,19 @@ class Bottleneck(nn.Module):
 
 class fcn_resnet(nn.Module):
 
-    def __init__(self, block, layers, module_type='32s', n_classes=21, pretrained=False):
+    def __init__(self, block, layers, module_type='32s', n_classes=21, pretrained=False, upsample_method='upsample_bilinear'):
+        """
+        :param block:
+        :param layers:
+        :param module_type:
+        :param n_classes:
+        :param pretrained:
+        :param upsample_method: 'upsample_bilinear' or 'ConvTranspose2d'
+        """
         super(fcn_resnet, self).__init__()
         self.n_classes = n_classes
         self.module_type = module_type
+        self.upsample_method = upsample_method
 
         self.inplanes = 64
         self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
@@ -124,6 +133,13 @@ class fcn_resnet(nn.Module):
         # self.fc = nn.Linear(512 * block.expansion, num_classes)
 
         self.classifier = nn.Conv2d(512 * block.expansion, self.n_classes, 1)
+
+        if self.upsample_method == 'upsample_bilinear':
+            pass
+        elif self.upsample_method == 'ConvTranspose2d':
+            self.upsample_1 = nn.ConvTranspose2d(self.n_classes, self.n_classes, 3, stride=2, padding=1)
+            self.upsample_2 = nn.ConvTranspose2d(self.n_classes, self.n_classes, 3, stride=2)
+            # self.upsample_3 = nn.ConvTranspose2d(self.n_classes, self.n_classes, 3, stride=2, padding=1)
 
         if self.module_type=='16s' or self.module_type=='8s':
             self.score_pool4 = nn.Conv2d(256, self.n_classes, 1)
@@ -176,10 +192,20 @@ class fcn_resnet(nn.Module):
             score_pool3 = self.score_pool3(x_layer2)
 
         if self.module_type=='16s' or self.module_type=='8s':
-            score = F.upsample_bilinear(score, score_pool4.size()[2:])
+            # print('score_pool4.size():', score_pool4.size())
+            # print('score.size():', score.size())
+            if self.upsample_method == 'upsample_bilinear':
+                score = F.upsample_bilinear(score, score_pool4.size()[2:])
+            elif self.upsample_method == 'ConvTranspose2d':
+                score = self.upsample_1(score)
             score += score_pool4
         if self.module_type=='8s':
-            score = F.upsample_bilinear(score, score_pool3.size()[2:])
+            # print('score_pool3.size():', score_pool3.size())
+            # print('score.size():', score.size())
+            if self.upsample_method == 'upsample_bilinear':
+                score = F.upsample_bilinear(score, score_pool3.size()[2:])
+            elif self.upsample_method == 'ConvTranspose2d':
+                score = self.upsample_2(score)
             score += score_pool3
 
         out = F.upsample_bilinear(score, x_size)

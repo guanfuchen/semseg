@@ -179,7 +179,7 @@ class DRN(nn.Module):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
-    # 这种构成网络层的方法类似于Residual Neural Network
+    # 这种构成网络层的方法类似于Residual Neural Network，new_level表示第一个conv block和后面的conv是否空洞率相同
     def _make_layer(self, block, planes, blocks, stride=1, dilation=1, new_level=True, residual=True):
         assert dilation == 1 or dilation % 2 == 0
         downsample = None
