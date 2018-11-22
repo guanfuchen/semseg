@@ -114,6 +114,8 @@ class fcn_MobileNet(nn.Module):
 
             new_dict = {}
             for dict_index, (k, v) in enumerate(pretrained_dict.items()):
+                if k=='module.fc.weight':
+                    break
                 # print(dict_index)
                 # print(k)
                 new_k = model_dict_keys[dict_index]
