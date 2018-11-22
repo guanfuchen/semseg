@@ -186,7 +186,7 @@ class fcn_resnet(nn.Module):
 
         return out
 
-    def initial_imagenet(self, model_name):
+    def init_weight(self, model_name):
         pretrain_model = None
         if model_name=='fcn_resnet18':
             pretrain_model = models.resnet18(pretrained=True)
@@ -246,7 +246,7 @@ def fcn_resnet18(module_type='32s', n_classes=21, pretrained=False):
     """
     model = fcn_resnet(BasicBlock, [2, 2, 2, 2], module_type=module_type, n_classes=n_classes, pretrained=pretrained)
     if pretrained:
-        model.initial_imagenet('fcn_resnet18')
+        model.init_weight('fcn_resnet18')
     return model
 
 
@@ -257,7 +257,7 @@ def fcn_resnet34(module_type='32s', n_classes=21, pretrained=False):
     """
     model = fcn_resnet(BasicBlock, [3, 4, 6, 3], module_type=module_type, n_classes=n_classes, pretrained=pretrained)
     if pretrained:
-        model.initial_imagenet('fcn_resnet34')
+        model.init_weight('fcn_resnet34')
     return model
 
 
@@ -268,7 +268,7 @@ def fcn_resnet50(module_type='32s', n_classes=21, pretrained=False):
     """
     model = fcn_resnet(Bottleneck, [3, 4, 6, 3], module_type=module_type, n_classes=n_classes, pretrained=pretrained)
     if pretrained:
-        model.initial_imagenet('fcn_resnet50')
+        model.init_weight('fcn_resnet50')
     return model
 
 
@@ -279,7 +279,7 @@ def fcn_resnet101(module_type='32s', n_classes=21, pretrained=False):
     """
     model = fcn_resnet(Bottleneck, [3, 4, 23, 3], module_type=module_type, n_classes=n_classes, pretrained=pretrained)
     if pretrained:
-        model.initial_imagenet('fcn_resnet101')
+        model.init_weight('fcn_resnet101')
     return model
 
 
@@ -290,7 +290,7 @@ def fcn_resnet152(module_type='32s', n_classes=21, pretrained=False):
     """
     model = fcn_resnet(Bottleneck, [3, 8, 36, 3], module_type=module_type, n_classes=n_classes, pretrained=pretrained)
     if pretrained:
-        model.initial_imagenet('fcn_resnet152')
+        model.init_weight('fcn_resnet152')
     return model
 
 

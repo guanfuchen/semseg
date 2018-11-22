@@ -30,7 +30,7 @@ class segnet(nn.Module):
         self.up2 = segnetUp2(128, 64)
         self.up1 = segnetUp2(64, n_classes)
 
-        self.init_vgg16(pretrained=pretrained)
+        self.init_weights(pretrained=pretrained)
 
     def forward(self, x):
         x, pool_indices1, unpool_shape1 = self.down1(x)
@@ -46,15 +46,17 @@ class segnet(nn.Module):
         x = self.up1(x, pool_indices=pool_indices1, unpool_shape=unpool_shape1)
         return x
 
-    def init_vgg16(self, pretrained=False):
-        vgg16 = models.vgg16(pretrained=pretrained)
+    def init_weights(self, pretrained=False):
+        # the model vgg16_bn is better than vgg16?
+        # vgg16 = models.vgg16(pretrained=pretrained)
+        vgg16 = models.vgg16_bn(pretrained=pretrained)
 
         # -----------赋值前面2+2+3+3+3层feature的特征-------------
         # 由于vgg16的特征是Sequential，获得其中的子类通过children()
         vgg16_features = list(vgg16.features.children())
         vgg16_conv_layers = []
         for layer in vgg16_features:
-            if isinstance(layer, nn.Conv2d):
+            if isinstance(layer, nn.Conv2d) or isinstance(layer, nn.BatchNorm2d):
                 # print(layer)
                 vgg16_conv_layers.append(layer)
 
@@ -74,7 +76,7 @@ class segnet(nn.Module):
                         layer_lists = list(conv_block_child.cbr_seq)
                         for layer in conv_block_child.cbr_seq:
                             # print(layer)
-                            if isinstance(layer, nn.Conv2d):
+                            if isinstance(layer, nn.Conv2d) or isinstance(layer, nn.BatchNorm2d):
                                 # print(layer)
                                 segnet_down_conv_layers.append(layer)
 
@@ -191,7 +193,7 @@ class segnet_alignres(nn.Module):
                 nn.init.constant(m.weight, 1)
                 nn.init.constant(m.bias, 0)
 
-        self.init_vgg16(pretrained=pretrained)
+        self.init_weights(pretrained=pretrained)
 
     def forward(self, x):
         x, pool_indices1, unpool_shape1 = self.down1(x)
@@ -211,7 +213,7 @@ class segnet_alignres(nn.Module):
         x = self.up1(x, pool_indices=pool_indices1, unpool_shape=unpool_shape1)
         return x
 
-    def init_vgg16(self, pretrained=False):
+    def init_weights(self, pretrained=False):
         vgg16 = models.vgg16(pretrained=pretrained)
 
         # -----------赋值前面2+2+3+3+3层feature的特征-------------
@@ -424,39 +426,36 @@ class segnet_squeeze(nn.Module):
 
 if __name__ == '__main__':
     batch_size = 1
-    # n_classes = 21
-    # model = segnet(n_classes=n_classes, pretrained=False)
-    # # model.init_vgg16()
-    # x = Variable(torch.randn(1, 3, 360, 480))
-    # y = Variable(torch.LongTensor(np.ones((1, 360, 480), dtype=np.int)))
-    # # print(x.shape)
-    # start = time.time()
-    # pred = model(x)
-    # end = time.time()
-    # print(end-start)
-    # # print(pred.shape)
-    # print('pred.type:', pred.type)
-    # loss = cross_entropy2d(pred, y)
-    # # print(loss)
-
     n_classes = 21
-    model = segnet_alignres(n_classes=n_classes, pretrained=False)
-    # model.init_vgg16()
-    x = Variable(torch.randn(batch_size, 3, 360, 480))
-    y = Variable(torch.LongTensor(np.ones((batch_size, 360, 480), dtype=np.int)))
+    model = segnet(n_classes=n_classes, pretrained=True)
+    x = Variable(torch.randn(1, 3, 360, 480))
+    y = Variable(torch.LongTensor(np.ones((1, 360, 480), dtype=np.int)))
     # print(x.shape)
     start = time.time()
     pred = model(x)
     end = time.time()
     print(end-start)
     # print(pred.shape)
-    # print('pred.type:', pred.type)
+    print('pred.type:', pred.type)
     loss = cross_entropy2d(pred, y)
     # print(loss)
 
     # n_classes = 21
+    # model = segnet_alignres(n_classes=n_classes, pretrained=False)
+    # x = Variable(torch.randn(batch_size, 3, 360, 480))
+    # y = Variable(torch.LongTensor(np.ones((batch_size, 360, 480), dtype=np.int)))
+    # # print(x.shape)
+    # start = time.time()
+    # pred = model(x)
+    # end = time.time()
+    # print(end-start)
+    # # print(pred.shape)
+    # # print('pred.type:', pred.type)
+    # loss = cross_entropy2d(pred, y)
+    # # print(loss)
+
+    # n_classes = 21
     # model = segnet_squeeze(n_classes=n_classes, pretrained=False)
-    # # model.init_vgg16()
     # x = Variable(torch.randn(1, 3, 360, 480))
     # y = Variable(torch.LongTensor(np.ones((1, 360, 480), dtype=np.int)))
     # # print(x.shape)

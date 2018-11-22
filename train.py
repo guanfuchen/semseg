@@ -19,6 +19,7 @@ from semseg.modelloader.enetv2 import ENetV2
 from semseg.modelloader.erfnet import erfnet
 from semseg.modelloader.fc_densenet import fcdensenet103, fcdensenet56
 from semseg.modelloader.fcn import fcn
+from semseg.modelloader.fcn_mobilenet import fcn_MobileNet
 from semseg.modelloader.fcn_resnet import fcn_resnet18, fcn_resnet34
 from semseg.modelloader.segnet import segnet, segnet_squeeze, segnet_alignres, segnet_vgg19
 from semseg.modelloader.segnet_unet import segnet_unet
@@ -69,6 +70,12 @@ def train(args):
             model = fcn_resnet34(module_type='16s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
         elif args.structure == 'fcn_resnet34_8s':
             model = fcn_resnet34(module_type='8s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
+        elif args.structure == 'fcn_MobileNet_32s':
+            model = fcn_MobileNet(module_type='32s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
+        elif args.structure == 'fcn_MobileNet_16s':
+            model = fcn_MobileNet(module_type='16s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
+        elif args.structure == 'fcn_MobileNet_8s':
+            model = fcn_MobileNet(module_type='8s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
         elif args.structure == 'ResNetDUC':
             model = ResNetDUC(n_classes=dst.n_classes, pretrained=args.init_vgg16)
         elif args.structure == 'ResNetDUCHDC':
