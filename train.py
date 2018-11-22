@@ -133,15 +133,23 @@ def train(args):
     print('start_epoch:', start_epoch)
     optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr, momentum=0.99, weight_decay=5e-4)
     # optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, betas=(0.9, 0.999), eps=1e-08, weight_decay=1e-4)
+
+    data_count = int(dst.__len__() * 1.0 / args.batch_size)
+    print('data_count:', data_count)
     for epoch in range(start_epoch+1, 20000, 1):
         loss_epoch = 0
         loss_avg_epoch = 0
-        data_count = 0
+        # data_count = 0
         # if args.vis:
         #     vis.text('epoch:{}'.format(epoch), win='epoch')
         for i, (imgs, labels) in enumerate(trainloader):
+
+            # 最后的几张图片可能不到batch_size的数量，比如batch_size=4，可能只剩3张
+            imgs_batch = imgs.shape[0]
+            if imgs_batch != args.batch_size:
+                break
             print(i)
-            data_count = i
+            # data_count = i
             # print(labels.shape)
             # print(imgs.shape)
 
@@ -190,16 +198,16 @@ def train(args):
 
             # 显示一个周期的loss曲线
             if args.vis:
-                win = 'loss'
+                win = 'loss_iteration'
                 loss_np_expand = np.expand_dims(loss_np, axis=0)
-                win_res = vis.line(X=np.ones(1)*i, Y=loss_np_expand, win=win, update='append')
+                win_res = vis.line(X=np.ones(1)*(i+data_count*(epoch-1)+1), Y=loss_np_expand, win=win, update='append')
                 if win_res != win:
-                    vis.line(X=np.ones(1)*i, Y=loss_np_expand, win=win)
+                    vis.line(X=np.ones(1)*(i+1), Y=loss_np_expand, win=win)
 
-        # 关闭清空一个周期的loss
-        if args.vis:
-            win = 'loss'
-            vis.close(win)
+        # 关闭清空一个周期的loss，目标不清空
+        # if args.vis:
+        #     win = 'loss_iteration'
+        #     vis.close(win)
 
         # 显示多个周期的loss曲线
         loss_avg_epoch = loss_epoch / (data_count * 1.0)
