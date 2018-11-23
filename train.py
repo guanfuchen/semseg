@@ -12,8 +12,9 @@ from torch.autograd import Variable
 from semseg.dataloader.camvid_loader import camvidLoader
 from semseg.dataloader.cityscapes_loader import cityscapesLoader
 from semseg.loss import cross_entropy2d
+from semseg.modelloader.EDANet import EDANet
 from semseg.modelloader.deeplabv3 import Res_Deeplab_101, Res_Deeplab_50
-from semseg.modelloader.drn import drn_d_22, DRNSeg
+from semseg.modelloader.drn import drn_d_22, DRNSeg, drn_a_asymmetric_18
 from semseg.modelloader.duc_hdc import ResNetDUC, ResNetDUCHDC
 from semseg.modelloader.enet import ENet
 from semseg.modelloader.enetv2 import ENetV2
@@ -60,12 +61,12 @@ def train(args):
                         for item_x, item_y in zip(win_data_x, win_data_y):
                             f.write("{} {}\n".format(item_x, item_y))
                     done_time = str(int(time.time()))
-                    vis.text(vis_text_usage+'\n done at {} \n'.format(done_time), win=callback_text_usage_window)
+                    vis.text(vis_text_usage+'done at {}'.format(done_time), win=callback_text_usage_window)
 
     init_time = str(int(time.time()))
     if args.vis:
         vis = visdom.Visdom()
-        vis_text_usage = 'Operating in the text window \n Press s to save data'
+        vis_text_usage = 'Operating in the text window<br>Press s to save data<br>'
 
         callback_text_usage_window = vis.text(vis_text_usage)
         vis.register_event_handler(type_callback, callback_text_usage_window)
@@ -156,6 +157,10 @@ def train(args):
             model = Res_Deeplab_101(n_classes=dst.n_classes, is_refine=False)
         elif args.structure == 'Res_Deeplab_50':
             model = Res_Deeplab_50(n_classes=dst.n_classes, is_refine=False)
+        elif args.structure == 'EDANet':
+            model = EDANet(n_classes=dst.n_classes)
+        elif args.structure == 'drn_a_asymmetric_18':
+            model = DRNSeg(model_name='drn_a_asymmetric_18', n_classes=dst.n_classes, pretrained=False)
         if args.resume_model_state_dict != '':
             try:
                 # fcn32s、fcn16s和fcn8s模型略有增加参数，互相赋值重新训练过程中会有KeyError，暂时捕捉异常处理

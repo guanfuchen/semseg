@@ -50,10 +50,12 @@ class EDABlock(nn.Module):
 
         self.conv3x1_1 = nn.Conv2d(k, k, kernel_size=(3, 1), padding=(1, 0))
         self.conv1x3_1 = nn.Conv2d(k, k, kernel_size=(1, 3), padding=(0, 1))
+        # self.conv3x3_1 = nn.Conv2d(k, k, kernel_size=(3, 3), padding=(1, 1))
         self.bn1 = nn.BatchNorm2d(k)
 
         self.conv3x1_2 = nn.Conv2d(k, k, (3, 1), stride=1, padding=(dilated, 0), dilation=dilated)
         self.conv1x3_2 = nn.Conv2d(k, k, (1, 3), stride=1, padding=(0, dilated), dilation=dilated)
+        # self.conv3x3_2 = nn.Conv2d(k, k, (3, 3), stride=1, padding=(dilated, dilated), dilation=dilated)
         self.bn2 = nn.BatchNorm2d(k)
 
         self.dropout = nn.Dropout2d(dropprob)
@@ -67,11 +69,14 @@ class EDABlock(nn.Module):
 
         output = self.conv3x1_1(output)
         output = self.conv1x3_1(output)
+        # output = self.conv3x3_1(output)
+
         output = self.bn1(output)
         output = F.relu(output)
 
         output = self.conv3x1_2(output)
         output = self.conv1x3_2(output)
+        # output = self.conv3x3_2(output)
         output = self.bn2(output)
         output = F.relu(output)
 
@@ -132,11 +137,11 @@ class EDANet(nn.Module):
         output = self.project_layer(output)
 
         # Bilinear interpolation x8
-        output = F.upsample(output, scale_factor=8, mode='bilinear', align_corners=True)
+        output = F.upsample(output, scale_factor=8, mode='bilinear')
 
         # Bilinear interpolation x2 (inference only)
         if not self.training:
-            output = F.interpolate(output, scale_factor=2, mode='bilinear', align_corners=True)
+            output = F.upsample(output, scale_factor=2, mode='bilinear')
 
         return output
 

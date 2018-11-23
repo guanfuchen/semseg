@@ -12,6 +12,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 from torchvision import models
 
+from semseg.dataloader.utils import ASPP_Classifier_Module
 from semseg.loss import cross_entropy2d
 from semseg.modelloader.utils import AlignedResInception
 # from semseg.pytorch_modelsize import SizeEstimator
@@ -31,8 +32,52 @@ model_urls = {
 
 
 def conv3x3(in_planes, out_planes, stride=1, padding=1, dilation=1):
-    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
-                     padding=padding, bias=False, dilation=dilation)
+    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride, padding=padding, bias=False, dilation=dilation)
+
+def conv3x3_asymmetric(in_planes, out_planes, stride=1, padding=1, dilation=1):
+    return nn.Sequential(
+        nn.Conv2d(in_planes, out_planes, kernel_size=(3, 1), stride=stride, padding=(padding, 0), bias=False, dilation=dilation),
+        nn.Conv2d(out_planes, out_planes, kernel_size=(1, 3), stride=1, padding=(0, padding), bias=False, dilation=dilation),
+    )
+
+# drn基本构成块
+class BasicBlock_asymmetric(nn.Module):
+    expansion = 1
+
+    def __init__(self, inplanes, planes, stride=1, downsample=None, dilation=(1, 1), residual=True):
+        super(BasicBlock_asymmetric, self).__init__()
+        # dilation默认为(1,1)由两个dilation的卷积模块构成，由于stride=1，dilation为1，kernel为3
+        # 那么相当于kernel为6的卷积核，padding为1
+        # self.conv1 = conv3x3(inplanes, planes, stride, padding=dilation[0], dilation=dilation[0])
+        self.conv1 = conv3x3_asymmetric(inplanes, planes, stride, padding=dilation[0], dilation=dilation[0])
+        self.bn1 = nn.BatchNorm2d(planes)
+        self.relu = nn.ReLU(inplace=True)
+        # self.conv2 = conv3x3(planes, planes, padding=dilation[1], dilation=dilation[1])
+        self.conv2 = conv3x3_asymmetric(planes, planes, padding=dilation[1], dilation=dilation[1])
+        self.bn2 = nn.BatchNorm2d(planes)
+        self.downsample = downsample
+        self.stride = stride
+        self.residual = residual
+
+    def forward(self, x):
+        residual = x
+
+        # print(x.data.size())
+        out = self.conv1(x)
+        # print(out.data.size())
+        out = self.bn1(out)
+        out = self.relu(out)
+
+        out = self.conv2(out)
+        out = self.bn2(out)
+
+        if self.downsample is not None:
+            residual = self.downsample(x)
+        if self.residual:
+            out += residual
+        out = self.relu(out)
+
+        return out
 
 # drn基本构成块
 class BasicBlock(nn.Module):
@@ -43,12 +88,12 @@ class BasicBlock(nn.Module):
         super(BasicBlock, self).__init__()
         # dilation默认为(1,1)由两个dilation的卷积模块构成，由于stride=1，dilation为1，kernel为3
         # 那么相当于kernel为6的卷积核，padding为1
-        self.conv1 = conv3x3(inplanes, planes, stride,
-                             padding=dilation[0], dilation=dilation[0])
+        self.conv1 = conv3x3(inplanes, planes, stride, padding=dilation[0], dilation=dilation[0])
+        # self.conv1 = conv3x3_asymmetric(inplanes, planes, stride, padding=dilation[0], dilation=dilation[0])
         self.bn1 = nn.BatchNorm2d(planes)
         self.relu = nn.ReLU(inplace=True)
-        self.conv2 = conv3x3(planes, planes,
-                             padding=dilation[1], dilation=dilation[1])
+        self.conv2 = conv3x3(planes, planes, padding=dilation[1], dilation=dilation[1])
+        # self.conv2 = conv3x3_asymmetric(planes, planes, padding=dilation[1], dilation=dilation[1])
         self.bn2 = nn.BatchNorm2d(planes)
         self.downsample = downsample
         self.stride = stride
@@ -115,7 +160,7 @@ class Bottleneck(nn.Module):
 
 class DRN(nn.Module):
 
-    def __init__(self, block, layers, num_classes=1000, channels=(16, 32, 64, 128, 256, 512, 512, 512), out_map=False, out_middle=False, pool_size=28, arch='D'):
+    def __init__(self, block, layers, n_classes=21, channels=(16, 32, 64, 128, 256, 512, 512, 512), out_map=False, out_middle=False, pool_size=28, arch='D'):
         super(DRN, self).__init__()
         print(layers)
         self.inplanes = channels[0]
@@ -166,9 +211,9 @@ class DRN(nn.Module):
             self.layer9 = AlignedResInception(in_planes=512)
 
         # 最后的网络输出语义图
-        if num_classes > 0:
-            self.avgpool = nn.AvgPool2d(pool_size)
-            self.fc = nn.Conv2d(self.out_dim, num_classes, kernel_size=1, stride=1, padding=0, bias=True)
+        # if num_classes > 0:
+        #     self.avgpool = nn.AvgPool2d(pool_size)
+        #     self.fc = nn.Conv2d(self.out_dim, num_classes, kernel_size=1, stride=1, padding=0, bias=True)
 
         # 网络模块权重和偏置初始化
         for m in self.modules():
@@ -256,21 +301,22 @@ class DRN(nn.Module):
             x = self.layer9(x)
             y.append(x)
 
-        if self.out_map:
-            x = self.fc(x)
-        else:
-            x = self.avgpool(x)
-            x = self.fc(x)
-            x = x.view(x.size(0), -1)
+        # if self.out_map:
+        #     x = self.fc(x)
+        # else:
+        #     x = self.avgpool(x)
+        #     x = self.fc(x)
+        #     x = x.view(x.size(0), -1)
 
-        if self.out_middle:
-            return x, y
-        else:
-            return x
+        # if self.out_middle:
+        #     return x, y
+        # else:
+        #     return x
+        return x
 
 class DRN_A(nn.Module):
 
-    def __init__(self, block, layers, num_classes=1000):
+    def __init__(self, block, layers, n_classes=21):
         self.inplanes = 64
         super(DRN_A, self).__init__()
         self.out_dim = 512 * block.expansion
@@ -282,8 +328,15 @@ class DRN_A(nn.Module):
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
         self.layer3 = self._make_layer(block, 256, layers[2], stride=1, dilation=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=1, dilation=4)
-        self.avgpool = nn.AvgPool2d(28, stride=1)
-        self.fc = nn.Linear(512 * block.expansion, num_classes)
+        # self.avgpool = nn.AvgPool2d(28, stride=1)
+        # self.fc = nn.Linear(512 * block.expansion, num_classes)
+        self.layer5 = self._make_pred_layer(ASPP_Classifier_Module, [6, 12, 18, 24], [6, 12, 18, 24], n_classes, in_channels=512*block.expansion)
+        if self.layer5 is not None:
+            self.out_dim = n_classes
+            pass
+        else:
+            self.out_dim = 512 * block.expansion
+            pass
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -318,6 +371,9 @@ class DRN_A(nn.Module):
 
         return nn.Sequential(*layers)
 
+    def _make_pred_layer(self, block, dilation_series, padding_series, n_classes, in_channels):
+        return block(dilation_series, padding_series, n_classes, in_channels)
+
     def forward(self, x):
         x = self.conv1(x)
         x = self.bn1(x)
@@ -329,22 +385,31 @@ class DRN_A(nn.Module):
         x = self.layer3(x)
         x = self.layer4(x)
 
-        x = self.avgpool(x)
-        x = x.view(x.size(0), -1)
-        x = self.fc(x)
+        # x = self.avgpool(x)
+        # x = x.view(x.size(0), -1)
+        # x = self.fc(x)
+        # print('x.size():', x.size())
+        x = self.layer5(x)
+        # print('x.size():', x.size())
 
         return x
 
 def drn_a_50(pretrained=False, **kwargs):
     model = DRN_A(Bottleneck, [3, 4, 6, 3], **kwargs)
-    if pretrained:
-        model.load_state_dict(model_zoo.load_url('https://s3.amazonaws.com/pytorch/models/resnet50-19c8e357.pth'))
+    # if pretrained:
+    #     model.load_state_dict(model_zoo.load_url('https://s3.amazonaws.com/pytorch/models/resnet50-19c8e357.pth'))
     return model
 
 def drn_a_18(pretrained=False, **kwargs):
     model = DRN_A(BasicBlock, [2, 2, 2, 2], **kwargs)
-    if pretrained:
-        model.load_state_dict(model_zoo.load_url('https://s3.amazonaws.com/pytorch/models/resnet18-5c106cde.pth'))
+    # if pretrained:
+    #     model.load_state_dict(model_zoo.load_url('https://s3.amazonaws.com/pytorch/models/resnet18-5c106cde.pth'))
+    return model
+
+def drn_a_asymmetric_18(pretrained=False, **kwargs):
+    model = DRN_A(BasicBlock_asymmetric, [2, 2, 2, 2], **kwargs)
+    # if pretrained:
+    #     model.load_state_dict(model_zoo.load_url('https://s3.amazonaws.com/pytorch/models/resnet18-5c106cde.pth'))
     return model
 
 def drn_c_26(pretrained=False, **kwargs):
@@ -453,11 +518,13 @@ class DRNSeg(nn.Module):
         #     model = drn_a_18(pretrained=pretrained, num_classes=1000)
         # if model_name=='drn_e_22':
         #     model = drn_e_22(pretrained=pretrained, num_classes=1000)
-        model = eval(model_name)(pretrained=pretrained, num_classes=1000)
+        model = eval(model_name)(pretrained=pretrained, n_classes=n_classes)
         # pmodel = nn.DataParallel(model)
         # if pretrained_model is not None:
             # pmodel.load_state_dict(pretrained_model)
-        self.base = nn.Sequential(*list(model.children())[:-2])
+        # self.base = nn.Sequential(*list(model.children())[:-2])
+        # self.base = nn.Sequential(*list(model.children()))
+        self.base = model
 
         # 仅仅在最后一层seg layer上存有bias
         self.seg = nn.Conv2d(model.out_dim, n_classes, kernel_size=1)
@@ -497,7 +564,7 @@ class DRNSeg(nn.Module):
 
 if __name__ == '__main__':
     n_classes = 21
-    model = DRNSeg(model_name='drn_c_26', n_classes=n_classes, pretrained=False)
+    model = DRNSeg(model_name='drn_a_asymmetric_18', n_classes=n_classes, pretrained=False)
     # model = DRNSeg(model_name='drn_d_22', n_classes=n_classes, pretrained=False)
     # model.eval()
     # model.init_vgg16()
