@@ -145,27 +145,27 @@ class FCDenseNet(nn.Module):
         return nn.Sequential(*layers)
 
 
-def fcdensenet_tiny(drop_rate=0):
-    return FCDenseNet(2, 6, drop_rate=drop_rate)
+def fcdensenet_tiny(n_classes, drop_rate=0):
+    return FCDenseNet(2, 6, drop_rate=drop_rate, n_classes=n_classes)
 
-
-def fcdensenet56_nodrop():
-    return FCDenseNet(4, 12, drop_rate=0)
+def fcdensenet56_nodrop(n_classes):
+    return FCDenseNet(4, 12, drop_rate=0, n_classes=n_classes)
 
 
 def fcdensenet56(n_classes, drop_rate=0.2):
     return FCDenseNet(4, 12, drop_rate=drop_rate, n_classes=n_classes)
 
 
-def fcdensenet67(drop_rate=0.2):
-    return FCDenseNet(5, 16, drop_rate=drop_rate)
+def fcdensenet67_nodrop(n_classes):
+    return FCDenseNet(5, 16, drop_rate=0, n_classes=n_classes)
+
+def fcdensenet67(n_classes, drop_rate=0.2):
+    return FCDenseNet(5, 16, drop_rate=drop_rate, n_classes=n_classes)
 
 
 def fcdensenet103(n_classes, drop_rate=0.2):
-    return FCDenseNet([4, 5, 7, 10, 12, 15, 12, 10, 7, 5, 4], 16,
-                      drop_rate=drop_rate, n_classes=n_classes)
+    return FCDenseNet([4, 5, 7, 10, 12, 15, 12, 10, 7, 5, 4], 16, drop_rate=drop_rate, n_classes=n_classes)
 
 
-def fcdensenet103_nodrop(drop_rate=0):
-    return FCDenseNet([4, 5, 7, 10, 12, 15, 12, 10, 7, 5, 4], 16,
-                      drop_rate=drop_rate)
+def fcdensenet103_nodrop(n_classes, drop_rate=0):
+    return FCDenseNet([4, 5, 7, 10, 12, 15, 12, 10, 7, 5, 4], 16, drop_rate=drop_rate, n_classes=n_classes)

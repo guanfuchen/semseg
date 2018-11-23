@@ -18,7 +18,7 @@ from semseg.modelloader.duc_hdc import ResNetDUC, ResNetDUCHDC
 from semseg.modelloader.enet import ENet
 from semseg.modelloader.enetv2 import ENetV2
 from semseg.modelloader.erfnet import erfnet
-from semseg.modelloader.fc_densenet import fcdensenet103, fcdensenet56
+from semseg.modelloader.fc_densenet import fcdensenet103, fcdensenet56, fcdensenet_tiny
 from semseg.modelloader.fcn import fcn
 from semseg.modelloader.fcn_mobilenet import fcn_MobileNet
 from semseg.modelloader.fcn_resnet import fcn_resnet18, fcn_resnet34
@@ -27,10 +27,49 @@ from semseg.modelloader.segnet_unet import segnet_unet
 from semseg.modelloader.sqnet import sqnet
 
 
+
+
 def train(args):
+    def type_callback(event):
+        # print('event_type:{}'.format(event['event_type']))
+        if event['event_type'] == 'KeyPress':
+            event_key = event['key']
+            if event_key == 'Enter':
+                pass
+                # print('event_type:Enter')
+            elif event_key == 'Backspace':
+                pass
+                # print('event_type:Backspace')
+            elif event_key == 'Delete':
+                pass
+                # print('event_type:Delete')
+            elif len(event_key) == 1:
+                pass
+                # print('event_key:{}'.format(event['key']))
+                if event_key=='s':
+                    import json
+                    win = 'loss_iteration'
+                    win_data = vis.get_window_data(win)
+                    win_data_dict = json.loads(win_data)
+                    win_data_content_dict = win_data_dict['content']
+                    win_data_x = np.array(win_data_content_dict['data'][0]['x'])
+                    win_data_y = np.array(win_data_content_dict['data'][0]['y'])
+
+                    win_data_save_file = '/tmp/loss_iteration_{}.txt'.format(init_time)
+                    with open(win_data_save_file, 'wb') as f:
+                        for item_x, item_y in zip(win_data_x, win_data_y):
+                            f.write("{} {}\n".format(item_x, item_y))
+                    done_time = str(int(time.time()))
+                    vis.text(vis_text_usage+'\n done at {} \n'.format(done_time), win=callback_text_usage_window)
+
     init_time = str(int(time.time()))
     if args.vis:
         vis = visdom.Visdom()
+        vis_text_usage = 'Operating in the text window \n Press s to save data'
+
+        callback_text_usage_window = vis.text(vis_text_usage)
+        vis.register_event_handler(type_callback, callback_text_usage_window)
+
     # if args.dataset_path == '':
     #     HOME_PATH = os.path.expanduser('~')
     #     local_path = os.path.join(HOME_PATH, 'Data/CamVid')
@@ -111,6 +150,8 @@ def train(args):
             model = fcdensenet103(n_classes=dst.n_classes)
         elif args.structure == 'fcdensenet56':
             model = fcdensenet56(n_classes=dst.n_classes)
+        elif args.structure == 'fcdensenet_tiny':
+            model = fcdensenet_tiny(n_classes=dst.n_classes)
         elif args.structure == 'Res_Deeplab_101':
             model = Res_Deeplab_101(n_classes=dst.n_classes, is_refine=False)
         elif args.structure == 'Res_Deeplab_50':
@@ -209,7 +250,8 @@ def train(args):
                 win_res = vis.line(X=np.ones(1)*(i+data_count*(epoch-1)+1), Y=loss_np_expand, win=win, update='append')
                 if win_res != win:
                     vis.line(X=np.ones(1)*(i+1), Y=loss_np_expand, win=win)
-
+                # if i+data_count*(epoch-1)==0:
+                #     vis.register_event_handler(type_callback, win_res)
         # 关闭清空一个周期的loss，目标不清空
         # if args.vis:
         #     win = 'loss_iteration'

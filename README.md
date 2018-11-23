@@ -40,6 +40,7 @@
 - [SemanticSegmentation_DL](https://github.com/tangzhenyu/SemanticSegmentation_DL)，该仓库整理了常用的DL语义分割论文资料。
 - [2015-10-09-segmentation.md](https://github.com/handong1587/handong1587.github.io/blob/master/_posts/deep_learning/2015-10-09-segmentation.md) handong对于语义分割的论文收集总结，参考较多。
 - [SemanticSegPaperCollection](https://github.com/shawnyuen/SemanticSegPaperCollection)，相关论文收集。
+- [real-time-network](https://github.com/wpf535236337/real-time-network)，包含了相关实时语义分割的论文。
 
 ---
 ## 相关论文
