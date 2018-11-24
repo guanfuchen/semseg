@@ -63,6 +63,18 @@ class mobilenet_conv_dw_relu(nn.Module):
         return x
 
 
+def fcn_MobileNet_32s(n_classes=21, pretrained=False):
+    model = fcn_MobileNet(module_type='32s', n_classes=n_classes, pretrained=pretrained)
+    return model
+
+def fcn_MobileNet_16s(n_classes=21, pretrained=False):
+    model = fcn_MobileNet(module_type='16s', n_classes=n_classes, pretrained=pretrained)
+    return model
+
+def fcn_MobileNet_8s(n_classes=21, pretrained=False):
+    model = fcn_MobileNet(module_type='8s', n_classes=n_classes, pretrained=pretrained)
+    return model
+
 class fcn_MobileNet(nn.Module):
     """
     :param

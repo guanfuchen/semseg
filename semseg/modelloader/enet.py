@@ -589,7 +589,7 @@ class Decoder(nn.Module):
 
 
 class ENet(nn.Module):
-    def __init__(self, n_classes):
+    def __init__(self, n_classes, pretrained=False):
         super(ENet, self).__init__()
 
         # enet编码器解码器架构

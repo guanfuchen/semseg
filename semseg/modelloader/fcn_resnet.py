@@ -265,6 +265,8 @@ class fcn_resnet(nn.Module):
                     # print(l1)
                     # print(l2)
 
+
+
 def fcn_resnet18(module_type='32s', n_classes=21, pretrained=False):
     """Constructs a ResNet-18 model.
     Args:
@@ -275,6 +277,17 @@ def fcn_resnet18(module_type='32s', n_classes=21, pretrained=False):
         model.init_weight('fcn_resnet18')
     return model
 
+def fcn_resnet18_32s(n_classes=21, pretrained=False):
+    model = fcn_resnet18(module_type='32s', n_classes=n_classes, pretrained=pretrained)
+    return model
+
+def fcn_resnet18_16s(n_classes=21, pretrained=False):
+    model = fcn_resnet18(module_type='16s', n_classes=n_classes, pretrained=pretrained)
+    return model
+
+def fcn_resnet18_8s(n_classes=21, pretrained=False):
+    model = fcn_resnet18(module_type='8s', n_classes=n_classes, pretrained=pretrained)
+    return model
 
 def fcn_resnet34(module_type='32s', n_classes=21, pretrained=False):
     """Constructs a ResNet-34 model.
@@ -286,6 +299,17 @@ def fcn_resnet34(module_type='32s', n_classes=21, pretrained=False):
         model.init_weight('fcn_resnet34')
     return model
 
+def fcn_resnet34_32s(n_classes=21, pretrained=False):
+    model = fcn_resnet34(module_type='32s', n_classes=n_classes, pretrained=pretrained)
+    return model
+
+def fcn_resnet34_16s(n_classes=21, pretrained=False):
+    model = fcn_resnet34(module_type='16s', n_classes=n_classes, pretrained=pretrained)
+    return model
+
+def fcn_resnet34_8s(n_classes=21, pretrained=False):
+    model = fcn_resnet34(module_type='8s', n_classes=n_classes, pretrained=pretrained)
+    return model
 
 def fcn_resnet50(module_type='32s', n_classes=21, pretrained=False):
     """Constructs a ResNet-50 model.

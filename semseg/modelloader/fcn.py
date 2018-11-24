@@ -10,7 +10,20 @@ from torchvision import models
 
 # fcn32s模型
 from semseg.loss import cross_entropy2d
+from semseg.utils.flops_benchmark import add_flops_counting_methods
 
+
+def fcn_32s(n_classes=21, pretrained=False):
+    model = fcn(module_type='32s', n_classes=n_classes, pretrained=pretrained)
+    return model
+
+def fcn_16s(n_classes=21, pretrained=False):
+    model = fcn(module_type='16s', n_classes=n_classes, pretrained=pretrained)
+    return model
+
+def fcn_8s(n_classes=21, pretrained=False):
+    model = fcn(module_type='8s', n_classes=n_classes, pretrained=pretrained)
+    return model
 
 class fcn(nn.Module):
     def forward(self, x):
@@ -158,6 +171,11 @@ if __name__ == '__main__':
     model_fcn32s = fcn(module_type='32s', n_classes=n_classes, pretrained=False)
     model_fcn16s = fcn(module_type='16s', n_classes=n_classes, pretrained=False)
     model_fcn8s = fcn(module_type='8s', n_classes=n_classes, pretrained=False)
+
+    # model_fcn32s = add_flops_counting_methods(model_fcn32s)
+    # model_fcn32s = model_fcn32s.train()
+    # model_fcn32s.start_flops_count()
+
     # model.init_vgg16()
     x = Variable(torch.randn(1, 3, 360, 480))
     y = Variable(torch.LongTensor(np.ones((1, 360, 480), dtype=np.int)))
@@ -168,6 +186,9 @@ if __name__ == '__main__':
     pred = model_fcn32s(x)
     end = time.time()
     print(end-start)
+
+    # model_fcn32s_flops = model_fcn32s.compute_average_flops_cost() / 1e9 / 2
+    # print('model_fcn32s_flops:', model_fcn32s_flops)
 
     # ---------------------------fcn16s模型运行时间-----------------------
     start = time.time()

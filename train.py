@@ -154,9 +154,9 @@ def train(args):
         elif args.structure == 'fcdensenet_tiny':
             model = fcdensenet_tiny(n_classes=dst.n_classes)
         elif args.structure == 'Res_Deeplab_101':
-            model = Res_Deeplab_101(n_classes=dst.n_classes, is_refine=False)
+            model = Res_Deeplab_101(n_classes=dst.n_classes)
         elif args.structure == 'Res_Deeplab_50':
-            model = Res_Deeplab_50(n_classes=dst.n_classes, is_refine=False)
+            model = Res_Deeplab_50(n_classes=dst.n_classes)
         elif args.structure == 'EDANet':
             model = EDANet(n_classes=dst.n_classes)
         elif args.structure == 'drn_a_asymmetric_18':
@@ -181,6 +181,7 @@ def train(args):
 
     if args.cuda:
         model.cuda()
+    model.train()
     print('start_epoch:', start_epoch)
     optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr, momentum=0.99, weight_decay=5e-4)
     # optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, betas=(0.9, 0.999), eps=1e-08, weight_decay=1e-4)

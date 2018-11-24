@@ -89,7 +89,7 @@ class EDABlock(nn.Module):
 
 
 class EDANet(nn.Module):
-    def __init__(self, n_classes=20):
+    def __init__(self, n_classes=20, pretrained=False):
         super(EDANet, self).__init__()
 
         self.layers = nn.ModuleList()

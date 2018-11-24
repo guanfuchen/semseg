@@ -509,7 +509,7 @@ class ENetV2(nn.Module):
     is used. Default: True.
     """
 
-    def __init__(self, n_classes, encoder_relu=False, decoder_relu=True):
+    def __init__(self, n_classes, encoder_relu=False, decoder_relu=True, pretrained=False):
         super(ENetV2, self).__init__()
 
         self.initial_block = InitialBlock(3, 16, padding=1, relu=encoder_relu)

@@ -12,9 +12,8 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 from torchvision import models
 
-from semseg.dataloader.utils import ASPP_Classifier_Module
 from semseg.loss import cross_entropy2d
-from semseg.modelloader.utils import AlignedResInception
+from semseg.modelloader.utils import AlignedResInception, ASPP_Classifier_Module
 # from semseg.pytorch_modelsize import SizeEstimator
 
 webroot = 'https://tigress-web.princeton.edu/~fy/drn/models/'
@@ -51,10 +50,14 @@ class BasicBlock_asymmetric(nn.Module):
         # self.conv1 = conv3x3(inplanes, planes, stride, padding=dilation[0], dilation=dilation[0])
         self.conv1 = conv3x3_asymmetric(inplanes, planes, stride, padding=dilation[0], dilation=dilation[0])
         self.bn1 = nn.BatchNorm2d(planes)
+        for i in self.bn1.parameters():
+            i.requires_grad = False
         self.relu = nn.ReLU(inplace=True)
         # self.conv2 = conv3x3(planes, planes, padding=dilation[1], dilation=dilation[1])
         self.conv2 = conv3x3_asymmetric(planes, planes, padding=dilation[1], dilation=dilation[1])
         self.bn2 = nn.BatchNorm2d(planes)
+        for i in self.bn2.parameters():
+            i.requires_grad = False
         self.downsample = downsample
         self.stride = stride
         self.residual = residual
@@ -91,10 +94,14 @@ class BasicBlock(nn.Module):
         self.conv1 = conv3x3(inplanes, planes, stride, padding=dilation[0], dilation=dilation[0])
         # self.conv1 = conv3x3_asymmetric(inplanes, planes, stride, padding=dilation[0], dilation=dilation[0])
         self.bn1 = nn.BatchNorm2d(planes)
+        for i in self.bn1.parameters():
+            i.requires_grad = False
         self.relu = nn.ReLU(inplace=True)
         self.conv2 = conv3x3(planes, planes, padding=dilation[1], dilation=dilation[1])
         # self.conv2 = conv3x3_asymmetric(planes, planes, padding=dilation[1], dilation=dilation[1])
         self.bn2 = nn.BatchNorm2d(planes)
+        for i in self.bn2.parameters():
+            i.requires_grad = False
         self.downsample = downsample
         self.stride = stride
         self.residual = residual
@@ -126,12 +133,18 @@ class Bottleneck(nn.Module):
         super(Bottleneck, self).__init__()
         self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, bias=False)
         self.bn1 = nn.BatchNorm2d(planes)
+        for i in self.bn1.parameters():
+            i.requires_grad = False
         self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride,
                                padding=dilation[1], bias=False,
                                dilation=dilation[1])
         self.bn2 = nn.BatchNorm2d(planes)
+        for i in self.bn2.parameters():
+            i.requires_grad = False
         self.conv3 = nn.Conv2d(planes, planes * 4, kernel_size=1, bias=False)
         self.bn3 = nn.BatchNorm2d(planes * 4)
+        for i in self.bn3.parameters():
+            i.requires_grad = False
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
         self.stride = stride
@@ -162,7 +175,7 @@ class DRN(nn.Module):
 
     def __init__(self, block, layers, n_classes=21, channels=(16, 32, 64, 128, 256, 512, 512, 512), out_map=False, out_middle=False, pool_size=28, arch='D'):
         super(DRN, self).__init__()
-        print(layers)
+        # print(layers)
         self.inplanes = channels[0]
         self.out_map = out_map
         self.out_dim = channels[-1]
@@ -322,6 +335,8 @@ class DRN_A(nn.Module):
         self.out_dim = 512 * block.expansion
         self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
+        for i in self.bn1.parameters():
+            i.requires_grad = False
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 64, layers[0])
@@ -341,7 +356,8 @@ class DRN_A(nn.Module):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                m.weight.data.normal_(0, math.sqrt(2. / n))
+                # m.weight.data.normal_(0, math.sqrt(2. / n))
+                m.weight.data.normal_(0, 0.01)
             elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
@@ -361,6 +377,9 @@ class DRN_A(nn.Module):
                           kernel_size=1, stride=stride, bias=False),
                 nn.BatchNorm2d(planes * block.expansion),
             )
+            for i in downsample._modules['1'].parameters():
+                i.requires_grad = False
+
 
         layers = []
         layers.append(block(self.inplanes, planes, stride, downsample))
@@ -408,6 +427,18 @@ def drn_a_18(pretrained=False, **kwargs):
 
 def drn_a_asymmetric_18(pretrained=False, **kwargs):
     model = DRN_A(BasicBlock_asymmetric, [2, 2, 2, 2], **kwargs)
+    # if pretrained:
+    #     model.load_state_dict(model_zoo.load_url('https://s3.amazonaws.com/pytorch/models/resnet18-5c106cde.pth'))
+    return model
+
+def drn_a_34(pretrained=False, **kwargs):
+    model = DRN_A(BasicBlock, [3, 4, 6, 3], **kwargs)
+    # if pretrained:
+    #     model.load_state_dict(model_zoo.load_url('https://s3.amazonaws.com/pytorch/models/resnet18-5c106cde.pth'))
+    return model
+
+def drn_a_asymmetric_34(pretrained=False, **kwargs):
+    model = DRN_A(BasicBlock_asymmetric, [3, 4, 6, 3], **kwargs)
     # if pretrained:
     #     model.load_state_dict(model_zoo.load_url('https://s3.amazonaws.com/pytorch/models/resnet18-5c106cde.pth'))
     return model
@@ -493,6 +524,79 @@ def drn_e_22(pretrained=False, **kwargs):
     # if pretrained:
     #     model.load_state_dict(model_zoo.load_url(model_urls['drn-d-22']))
     return model
+
+# -------------------------semantic model----------------------------------
+
+def drnseg_a_50(pretrained=False, n_classes=21):
+    model = DRNSeg(model_name='drn_a_50', n_classes=n_classes, pretrained=pretrained)
+    return model
+
+def drnseg_a_18(pretrained=False, n_classes=21):
+    model = DRNSeg(model_name='drn_a_18', n_classes=n_classes, pretrained=pretrained)
+    return model
+
+def drnseg_a_asymmetric_18(pretrained=False, n_classes=21):
+    model = DRNSeg(model_name='drn_a_asymmetric_18', n_classes=n_classes, pretrained=pretrained)
+    return model
+
+def drnseg_a_34(pretrained=False, n_classes=21):
+    model = DRNSeg(model_name='drn_a_34', n_classes=n_classes, pretrained=pretrained)
+    return model
+
+def drnseg_a_asymmetric_34(pretrained=False, n_classes=21):
+    model = DRNSeg(model_name='drn_a_asymmetric_34', n_classes=n_classes, pretrained=pretrained)
+    return model
+
+def drnseg_c_26(pretrained=False, n_classes=21):
+    model = DRNSeg(model_name='drn_c_26', n_classes=n_classes, pretrained=pretrained)
+    return model
+
+def drnseg_c_42(pretrained=False, n_classes=21):
+    model = DRNSeg(model_name='drn_c_42', n_classes=n_classes, pretrained=pretrained)
+    return model
+
+def drnseg_c_58(pretrained=False, n_classes=21):
+    model = DRNSeg(model_name='drn_c_58', n_classes=n_classes, pretrained=pretrained)
+    return model
+
+def drnseg_d_22(pretrained=False, n_classes=21):
+    model = DRNSeg(model_name='drn_d_22', n_classes=n_classes, pretrained=pretrained)
+    return model
+
+
+def drnseg_d_24(pretrained=False, n_classes=21):
+    model = DRNSeg(model_name='drn_d_24', n_classes=n_classes, pretrained=pretrained)
+    return model
+
+def drnseg_d_38(pretrained=False, n_classes=21):
+    model = DRNSeg(model_name='drn_d_38', n_classes=n_classes, pretrained=pretrained)
+    return model
+
+def drnseg_d_40(pretrained=False, n_classes=21):
+    model = DRNSeg(model_name='drn_d_40', n_classes=n_classes, pretrained=pretrained)
+    return model
+
+def drnseg_d_54(pretrained=False, n_classes=21):
+    model = DRNSeg(model_name='drn_d_54', n_classes=n_classes, pretrained=pretrained)
+    return model
+
+def drnseg_d_56(pretrained=False, n_classes=21):
+    model = DRNSeg(model_name='drn_d_56', n_classes=n_classes, pretrained=pretrained)
+    return model
+
+def drnseg_d_105(pretrained=False, n_classes=21):
+    model = DRNSeg(model_name='drn_d_105', n_classes=n_classes, pretrained=pretrained)
+    return model
+
+def drnseg_d_107(pretrained=False, n_classes=21):
+    model = DRNSeg(model_name='drn_d_107', n_classes=n_classes, pretrained=pretrained)
+    return model
+
+def drnseg_e_22(pretrained=False, n_classes=21):
+    model = DRNSeg(model_name='drn_e_22', n_classes=n_classes, pretrained=pretrained)
+    return model
+
+# -----------------------------------------------------------
 
 # 转置卷积权重初始化填充方法
 def fill_up_weights(up):

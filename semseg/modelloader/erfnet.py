@@ -146,7 +146,7 @@ class Decoder(nn.Module):
 
 # ERFNet
 class erfnet(nn.Module):
-    def __init__(self, n_classes, encoder=None):  # use encoder to pass pretrained encoder
+    def __init__(self, n_classes, encoder=None, pretrained=False):  # use encoder to pass pretrained encoder
         super(erfnet, self).__init__()
 
         if (encoder == None):

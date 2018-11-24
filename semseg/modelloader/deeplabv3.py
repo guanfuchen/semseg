@@ -10,7 +10,7 @@ import numpy as np
 from torch.autograd import Variable
 import torch.nn.functional as F
 
-from semseg.dataloader.utils import ASPP_Classifier_Module
+from semseg.modelloader.utils import ASPP_Classifier_Module
 from semseg.loss import cross_entropy2d
 
 # affine_par = True
@@ -305,13 +305,13 @@ class ResNet(nn.Module):
 #     model = MS_Deeplab(Bottleneck, num_classes)
 #     return model
 
-def Res_Deeplab(n_classes=21):
-    # if is_refine:
-    #     model = ResNet_Refine(Bottleneck,[3, 4, 23, 3], n_classes)
-    # else:
-    #     model = ResNet(Bottleneck,[3, 4, 23, 3], n_classes)
-    model = ResNet(Bottleneck,[3, 4, 23, 3], n_classes)
-    return model
+# def Res_Deeplab(n_classes=21):
+#     # if is_refine:
+#     #     model = ResNet_Refine(Bottleneck,[3, 4, 23, 3], n_classes)
+#     # else:
+#     #     model = ResNet(Bottleneck,[3, 4, 23, 3], n_classes)
+#     model = ResNet(Bottleneck,[3, 4, 23, 3], n_classes)
+#     return model
 
 # def Res_Deeplab_18(n_classes=21, is_refine=False):
 #     if is_refine:
@@ -327,7 +327,7 @@ def Res_Deeplab(n_classes=21):
 #         model = ResNet(BasicBlock,[3, 4, 6, 3], n_classes)
 #     return model
 
-def Res_Deeplab_50(n_classes=21):
+def Res_Deeplab_50(n_classes=21, pretrained=False):
     # if is_refine:
     #     pass
     #     # model = ResNet_Refine(Bottleneck, [3, 4, 6, 3], n_classes)
@@ -336,7 +336,7 @@ def Res_Deeplab_50(n_classes=21):
     model = ResNet(Bottleneck, [3, 4, 6, 3], n_classes)
     return model
 
-def Res_Deeplab_101(n_classes=21):
+def Res_Deeplab_101(n_classes=21, pretrained=False):
     # if is_refine:
     #     pass
     #     # model = ResNet_Refine(Bottleneck, [3, 4, 23, 3], n_classes)
