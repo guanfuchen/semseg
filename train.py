@@ -12,6 +12,7 @@ from torch.autograd import Variable
 from semseg.dataloader.camvid_loader import camvidLoader
 from semseg.dataloader.cityscapes_loader import cityscapesLoader
 from semseg.loss import cross_entropy2d
+from semseg.metrics import scores
 from semseg.modelloader.EDANet import EDANet
 from semseg.modelloader.deeplabv3 import Res_Deeplab_101, Res_Deeplab_50
 from semseg.modelloader.drn import drn_d_22, DRNSeg, drn_a_asymmetric_18, drnseg_a_50, drnseg_a_18, drnseg_e_22, \
@@ -77,17 +78,24 @@ def train(args):
     #     local_path = os.path.join(HOME_PATH, 'Data/CamVid')
     # else:
     local_path = os.path.expanduser(args.dataset_path)
+    train_dst = None
+    val_dst = None
     if args.dataset == 'CamVid':
-        dst = camvidLoader(local_path, is_transform=True, is_augment=args.data_augment)
+        train_dst = camvidLoader(local_path, is_transform=True, is_augment=args.data_augment, split='train')
+        val_dst = camvidLoader(local_path, is_transform=True, is_augment=args.data_augment, split='val')
     elif args.dataset == 'CityScapes':
-        dst = cityscapesLoader(local_path, is_transform=True)
+        train_dst = cityscapesLoader(local_path, is_transform=True)
+        val_dst = cityscapesLoader(local_path, is_transform=True)
     else:
-        pass
+        print('{} dataset does not implement'.format(args.dataset))
+        exit(0)
 
-    # dst.n_classes = args.n_classes # 保证输入的class
-    trainloader = torch.utils.data.DataLoader(dst, batch_size=args.batch_size, shuffle=True)
+
+    train_loader = torch.utils.data.DataLoader(train_dst, batch_size=args.batch_size, shuffle=True)
+    val_loader = torch.utils.data.DataLoader(val_dst, batch_size=args.batch_size, shuffle=True)
 
     start_epoch = 0
+    best_mIoU = 0
     if args.resume_model != '':
         model = torch.load(args.resume_model)
         start_epoch_id1 = args.resume_model.rfind('_')
@@ -95,36 +103,44 @@ def train(args):
         start_epoch = int(args.resume_model[start_epoch_id1+1:start_epoch_id2])
     else:
         try:
-            model = eval(args.structure)(n_classes=dst.n_classes, pretrained=args.init_vgg16)
+            model = eval(args.structure)(n_classes=args.n_classes, pretrained=args.init_vgg16)
         except:
             print('missing structure or not support')
             exit(0)
         if args.resume_model_state_dict != '':
             try:
-                # fcn32s、fcn16s和fcn8s模型略有增加参数，互相赋值重新训练过程中会有KeyError，暂时捕捉异常处理
+                # from model save format get useful information, such as miou, epoch
+                miou_model_name_str = '_miou_'
+                class_model_name_str = '_class_'
+                miou_id1 = args.resume_model_state_dict.find(miou_model_name_str)+len(miou_model_name_str)
+                miou_id2 = args.resume_model_state_dict.find(class_model_name_str)
+                best_mIoU = float(args.resume_model_state_dict[miou_id1:miou_id2])
+
                 start_epoch_id1 = args.resume_model_state_dict.rfind('_')
                 start_epoch_id2 = args.resume_model_state_dict.rfind('.')
                 start_epoch = int(args.resume_model_state_dict[start_epoch_id1 + 1:start_epoch_id2])
                 pretrained_dict = torch.load(args.resume_model_state_dict)
-                # model_dict = model.state_dict()
-                # for k, v in pretrained_dict.items():
-                #     print(k)
-                # pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
-                # model_dict.update(pretrained_dict)
                 model.load_state_dict(pretrained_dict)
             except KeyError:
-                print('missing key')
+                print('missing resume_model_state_dict or wrong type')
 
 
 
     if args.cuda:
         model.cuda()
-    model.train()
     print('start_epoch:', start_epoch)
-    optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr, momentum=0.99, weight_decay=5e-4)
+    if args.solver == 'SGD':
+        optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr, momentum=0.99, weight_decay=5e-4)
+    elif args.solver == 'RMSprop':
+        optimizer = torch.optim.RMSprop(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr, momentum=0.99, weight_decay=5e-4)
+    elif args.solver == 'Adam':
+        optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr, weight_decay=5e-4)
+    else:
+        print('missing solver or not support')
+        exit(0)
     # optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, betas=(0.9, 0.999), eps=1e-08, weight_decay=1e-4)
 
-    data_count = int(dst.__len__() * 1.0 / args.batch_size)
+    data_count = int(train_dst.__len__() * 1.0 / args.batch_size)
     print('data_count:', data_count)
     for epoch in range(start_epoch+1, 20000, 1):
         loss_epoch = 0
@@ -132,16 +148,15 @@ def train(args):
         # data_count = 0
         # if args.vis:
         #     vis.text('epoch:{}'.format(epoch), win='epoch')
-        for i, (imgs, labels) in enumerate(trainloader):
+        for i, (imgs, labels) in enumerate(train_loader):
+            model.train()
 
             # 最后的几张图片可能不到batch_size的数量，比如batch_size=4，可能只剩3张
             imgs_batch = imgs.shape[0]
             if imgs_batch != args.batch_size:
                 break
-            print(i)
+            # print(i)
             # data_count = i
-            # print(labels.shape)
-            # print(imgs.shape)
 
             imgs = Variable(imgs)
             labels = Variable(labels)
@@ -152,12 +167,57 @@ def train(args):
             outputs = model(imgs)
             # print('type(outputs):', type(outputs))
 
+            # 一次backward后如果不清零，梯度是累加的
+            optimizer.zero_grad()
+
+            loss = cross_entropy2d(outputs, labels)
+            loss_np = loss.cpu().data.numpy()
+            loss_epoch += loss_np
+            # print('loss:', loss_np)
+            loss.backward()
+
+            optimizer.step()
+
+            # val result on val dataset and pick best to save
+            if i==data_count-1 and epoch%args.val_interval==0:
+                print('----starting val----')
+                model.eval()
+
+                val_gts, val_preds = [], []
+                for val_i, (val_imgs, val_labels) in enumerate(val_loader):
+                    # print(val_i)
+                    val_imgs = Variable(val_imgs)
+                    val_labels = Variable(val_labels)
+
+                    if args.cuda:
+                        val_imgs = val_imgs.cuda()
+                        val_labels = val_labels.cuda()
+
+                    val_outputs = model(val_imgs)
+                    val_pred = val_outputs.cpu().data.max(1)[1].numpy()
+                    val_gt = val_labels.cpu().data.numpy()
+                    for val_gt_, val_pred_ in zip(val_gt, val_pred):
+                        val_gts.append(val_gt_)
+                        val_preds.append(val_pred_)
+
+                score, class_iou = scores(val_gts, val_preds, n_class=args.n_classes)
+                for k, v in score.items():
+                    print(k, v)
+                    if k=='Mean IoU : \t':
+                        if v>best_mIoU:
+                            best_mIoU = v
+                            torch.save(model.state_dict(), '{}_camvid_miou_{}_class_{}_{}.pt'.format(args.structure, best_mIoU, args.n_classes, epoch))
+
+                for class_i in range(args.n_classes):
+                    print(class_i, class_iou[class_i])
+                print('----ending   val----')
+
             if args.vis and i%50==0:
                 pred_labels = outputs.cpu().data.max(1)[1].numpy()
                 # print(pred_labels.shape)
-                label_color = dst.decode_segmap(labels.cpu().data.numpy()[0]).transpose(2, 0, 1)
+                label_color = train_dst.decode_segmap(labels.cpu().data.numpy()[0]).transpose(2, 0, 1)
                 # print(label_color.shape)
-                pred_label_color = dst.decode_segmap(pred_labels[0]).transpose(2, 0, 1)
+                pred_label_color = train_dst.decode_segmap(pred_labels[0]).transpose(2, 0, 1)
                 # print(pred_label_color.shape)
                 win = 'label_color'
                 vis.image(label_color, win=win)
@@ -172,20 +232,6 @@ def train(args):
                 #     print('pred_label_color.transpose(2, 0, 1).shape:', pred_label_color.transpose(1, 2, 0).shape)
                 #     cv2.imwrite('/tmp/'+init_time+'/'+time_str+'_label.png', label_color.transpose(1, 2, 0))
                 #     cv2.imwrite('/tmp/'+init_time+'/'+time_str+'_pred_label.png', pred_label_color.transpose(1, 2, 0))
-
-
-            # print(outputs.size())
-            # print(labels.size())
-            # 一次backward后如果不清零，梯度是累加的
-            optimizer.zero_grad()
-
-            loss = cross_entropy2d(outputs, labels)
-            loss_np = loss.cpu().data.numpy()
-            loss_epoch += loss_np
-            print('loss:', loss_np)
-            loss.backward()
-
-            optimizer.step()
 
             # 显示一个周期的loss曲线
             if args.vis:
@@ -211,8 +257,8 @@ def train(args):
             if win_res != win:
                 vis.line(X=np.ones(1)*epoch, Y=loss_avg_epoch_expand, win=win)
 
-        if args.save_model and epoch%args.save_epoch==0:
-            torch.save(model.state_dict(), '{}_camvid_class_{}_{}.pt'.format(args.structure, dst.n_classes, epoch))
+        # if args.save_model and epoch%args.save_epoch==0:
+        #     torch.save(model.state_dict(), '{}_camvid_class_{}_{}.pt'.format(args.structure, args.n_classes, epoch))
 
 
 # best training: python train.py --resume_model fcn32s_camvid_9.pkl --save_model True
@@ -220,7 +266,8 @@ def train(args):
 if __name__=='__main__':
     # print('train----in----')
     parser = argparse.ArgumentParser(description='training parameter setting')
-    parser.add_argument('--structure', type=str, default='fcn_32s', help='use the net structure to segment [ fcn_32s ResNetDUC segnet ENet drn_d_22 ]')
+    parser.add_argument('--structure', type=str, default='ENetV2', help='use the net structure to segment [ fcn_32s ResNetDUC segnet ENet drn_d_22 ]')
+    parser.add_argument('--solver', type=str, default='SGD', help='use the solver to optimizer net [ SGD ]')
     parser.add_argument('--resume_model', type=str, default='', help='resume model path [ fcn32s_camvid_9.pkl ]')
     parser.add_argument('--resume_model_state_dict', type=str, default='', help='resume model state dict path [ fcn32s_camvid_9.pt ]')
     parser.add_argument('--save_model', type=bool, default=False, help='save model [ False ]')
@@ -230,7 +277,8 @@ if __name__=='__main__':
     parser.add_argument('--dataset_path', type=str, default='~/Data/CamVid', help='train dataset path [ ~/Data/CamVid ~/Data/cityscapes ]')
     parser.add_argument('--data_augment', type=bool, default=False, help='enlarge the training data [ False ]')
     parser.add_argument('--batch_size', type=int, default=1, help='train dataset batch size [ 1 ]')
-    # parser.add_argument('--n_classes', type=int, default=13, help='train class num [ 13 ]')
+    parser.add_argument('--val_interval', type=int, default=3, help='val dataset interval unit epoch [ 3 ]')
+    parser.add_argument('--n_classes', type=int, default=12, help='train class num [ 12 ]')
     parser.add_argument('--lr', type=float, default=1e-5, help='train learning rate [ 0.00001 ]')
     parser.add_argument('--vis', type=bool, default=False, help='visualize the training results [ False ]')
     parser.add_argument('--cuda', type=bool, default=False, help='use cuda [ False ]')

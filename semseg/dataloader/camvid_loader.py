@@ -23,7 +23,7 @@ class camvidLoader(data.Dataset):
         self.img_size = [360, 480]
         self.is_transform = is_transform
         self.mean = np.array([104.00699, 116.66877, 122.67892])
-        self.n_classes = 13
+        self.n_classes = 12
         self.files = collections.defaultdict(list)
         self.joint_augment_transform = None
         self.is_augment = is_augment
@@ -109,7 +109,7 @@ class camvidLoader(data.Dataset):
         Sky = [128, 128, 128]
         Building = [128, 0, 0]
         Pole = [192, 192, 128]
-        Road_marking = [255, 69, 0]
+        # Road_marking = [255, 69, 0]
         Road = [128, 64, 128]
         Pavement = [60, 40, 222]
         Tree = [128, 128, 0]
@@ -120,9 +120,22 @@ class camvidLoader(data.Dataset):
         Bicyclist = [0, 128, 192]
         Unlabelled = [0, 0, 0]
 
-        label_colours = np.array([Sky, Building, Pole, Road_marking, Road, 
-                                  Pavement, Tree, SignSymbol, Fence, Car, 
-                                  Pedestrian, Bicyclist, Unlabelled])
+        label_colours = np.array(
+            [
+                Sky,
+                Building,
+                Pole,
+                Road,
+                Pavement,
+                Tree,
+                SignSymbol,
+                Fence,
+                Car,
+                Pedestrian,
+                Bicyclist,
+                Unlabelled,
+            ]
+        )
         r = temp.copy()
         g = temp.copy()
         b = temp.copy()

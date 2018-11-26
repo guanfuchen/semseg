@@ -16,15 +16,17 @@ from semseg.loss import cross_entropy2d
 from semseg.metrics import scores
 from semseg.modelloader.EDANet import EDANet
 from semseg.modelloader.deeplabv3 import Res_Deeplab_101, Res_Deeplab_50
-from semseg.modelloader.drn import drn_d_22, DRNSeg, drn_a_asymmetric_18
+from semseg.modelloader.drn import drn_d_22, DRNSeg, drn_a_asymmetric_18, drnseg_a_50, drnseg_a_18, drnseg_e_22, \
+    drnseg_a_asymmetric_18, drnseg_d_22
 from semseg.modelloader.duc_hdc import ResNetDUC, ResNetDUCHDC
 from semseg.modelloader.enet import ENet
 from semseg.modelloader.enetv2 import ENetV2
 from semseg.modelloader.erfnet import erfnet
 from semseg.modelloader.fc_densenet import fcdensenet103, fcdensenet56, fcdensenet_tiny
-from semseg.modelloader.fcn import fcn
-from semseg.modelloader.fcn_mobilenet import fcn_MobileNet
-from semseg.modelloader.fcn_resnet import fcn_resnet18, fcn_resnet34
+from semseg.modelloader.fcn import fcn, fcn_32s, fcn_16s, fcn_8s
+from semseg.modelloader.fcn_mobilenet import fcn_MobileNet, fcn_MobileNet_32s, fcn_MobileNet_16s, fcn_MobileNet_8s
+from semseg.modelloader.fcn_resnet import fcn_resnet18, fcn_resnet34, fcn_resnet18_32s, fcn_resnet18_16s, \
+    fcn_resnet18_8s, fcn_resnet34_32s, fcn_resnet34_16s, fcn_resnet34_8s, fcn_resnet50_32s, fcn_resnet50_16s, fcn_resnet50_8s
 from semseg.modelloader.segnet import segnet, segnet_squeeze, segnet_alignres, segnet_vgg19
 from semseg.modelloader.segnet_unet import segnet_unet
 from semseg.modelloader.sqnet import sqnet
@@ -46,80 +48,17 @@ def validate(args):
         dst = cityscapesLoader(local_path, is_transform=True)
     else:
         pass
-    valloader = torch.utils.data.DataLoader(dst, batch_size=1)
+    val_loader = torch.utils.data.DataLoader(dst, batch_size=1)
 
     # if os.path.isfile(args.validate_model):
     if args.validate_model != '':
         model = torch.load(args.validate_model)
     else:
-        if args.structure == 'fcn32s':
-            model = fcn(module_type='32s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
-        elif args.structure == 'fcn16s':
-            model = fcn(module_type='16s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
-        elif args.structure == 'fcn8s':
-            model = fcn(module_type='8s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
-        elif args.structure == 'fcn_resnet18_32s':
-            model = fcn_resnet18(module_type='32s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
-        elif args.structure == 'fcn_resnet18_16s':
-            model = fcn_resnet18(module_type='16s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
-        elif args.structure == 'fcn_resnet18_8s':
-            model = fcn_resnet18(module_type='8s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
-        elif args.structure == 'fcn_resnet34_32s':
-            model = fcn_resnet34(module_type='32s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
-        elif args.structure == 'fcn_resnet34_16s':
-            model = fcn_resnet34(module_type='16s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
-        elif args.structure == 'fcn_resnet34_8s':
-            model = fcn_resnet34(module_type='8s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
-        elif args.structure == 'fcn_MobileNet_32s':
-            model = fcn_MobileNet(module_type='32s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
-        elif args.structure == 'fcn_MobileNet_16s':
-            model = fcn_MobileNet(module_type='16s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
-        elif args.structure == 'fcn_MobileNet_8s':
-            model = fcn_MobileNet(module_type='8s', n_classes=dst.n_classes, pretrained=args.init_vgg16)
-        elif args.structure == 'ResNetDUC':
-            model = ResNetDUC(n_classes=dst.n_classes, pretrained=args.init_vgg16)
-        elif args.structure == 'ResNetDUCHDC':
-            model = ResNetDUCHDC(n_classes=dst.n_classes, pretrained=args.init_vgg16)
-        elif args.structure == 'segnet':
-            model = segnet(n_classes=dst.n_classes, pretrained=args.init_vgg16)
-        elif args.structure == 'segnet_vgg19':
-            model = segnet_vgg19(n_classes=dst.n_classes, pretrained=args.init_vgg16)
-        elif args.structure == 'segnet_unet':
-            model = segnet_unet(n_classes=dst.n_classes, pretrained=args.init_vgg16)
-        elif args.structure == 'segnet_alignres':
-            model = segnet_alignres(n_classes=dst.n_classes, pretrained=args.init_vgg16)
-        elif args.structure == 'sqnet':
-            model = sqnet(n_classes=dst.n_classes, pretrained=args.init_vgg16)
-        elif args.structure == 'segnet_squeeze':
-            model = segnet_squeeze(n_classes=dst.n_classes, pretrained=args.init_vgg16)
-        elif args.structure == 'ENet':
-            model = ENet(n_classes=dst.n_classes)
-        elif args.structure == 'ENetV2':
-            model = ENetV2(n_classes=dst.n_classes)
-        elif args.structure == 'drn_d_22':
-            model = DRNSeg(model_name='drn_d_22', n_classes=dst.n_classes, pretrained=args.init_vgg16)
-        elif args.structure == 'drn_a_50':
-            model = DRNSeg(model_name='drn_a_50', n_classes=dst.n_classes, pretrained=args.init_vgg16)
-        elif args.structure == 'drn_a_18':
-            model = DRNSeg(model_name='drn_a_18', n_classes=dst.n_classes, pretrained=args.init_vgg16)
-        elif args.structure == 'drn_e_22':
-            model = DRNSeg(model_name='drn_e_22', n_classes=dst.n_classes, pretrained=args.init_vgg16)
-        elif args.structure == 'erfnet':
-            model = erfnet(n_classes=dst.n_classes)
-        elif args.structure == 'fcdensenet103':
-            model = fcdensenet103(n_classes=dst.n_classes)
-        elif args.structure == 'fcdensenet56':
-            model = fcdensenet56(n_classes=dst.n_classes)
-        elif args.structure == 'fcdensenet_tiny':
-            model = fcdensenet_tiny(n_classes=dst.n_classes)
-        elif args.structure == 'Res_Deeplab_101':
-            model = Res_Deeplab_101(n_classes=dst.n_classes)
-        elif args.structure == 'Res_Deeplab_50':
-            model = Res_Deeplab_50(n_classes=dst.n_classes)
-        elif args.structure == 'EDANet':
-            model = EDANet(n_classes=dst.n_classes)
-        elif args.structure == 'drn_a_asymmetric_18':
-            model = DRNSeg(model_name='drn_a_asymmetric_18', n_classes=dst.n_classes, pretrained=False)
+        try:
+            model = eval(args.structure)(n_classes=args.n_classes, pretrained=args.init_vgg16)
+        except:
+            print('missing structure or not support')
+            exit(0)
         if args.validate_model_state_dict != '':
             try:
                 model.load_state_dict(torch.load(args.validate_model_state_dict))
@@ -130,7 +69,7 @@ def validate(args):
     model.eval()
 
     gts, preds = [], []
-    for i, (imgs, labels) in enumerate(valloader):
+    for i, (imgs, labels) in enumerate(val_loader):
         print(i)
         #  print(labels.shape)
         #  print(imgs.shape)
@@ -211,7 +150,7 @@ if __name__=='__main__':
     parser.add_argument('--dataset', type=str, default='CamVid', help='train dataset [ CamVid CityScapes ]')
     parser.add_argument('--dataset_path', type=str, default='~/Data/CamVid', help='train dataset path [ ~/Data/CamVid ~/Data/cityscapes ]')
     parser.add_argument('--dataset_type', type=str, default='val', help='dataset type [ train val test ]')
-    parser.add_argument('--n_classes', type=int, default=13, help='train class num [ 13 ]')
+    parser.add_argument('--n_classes', type=int, default=12, help='train class num [ 12 ]')
     parser.add_argument('--vis', type=bool, default=False, help='visualize the training results [ False ]')
     parser.add_argument('--cuda', type=bool, default=False, help='use cuda [ False ]')
     parser.add_argument('--blend', type=bool, default=False, help='blend the result and the origin [ False ]')

@@ -681,7 +681,7 @@ if __name__ == '__main__':
     pred = model(x)
     end = time.time()
     print(end-start)
-    # print(pred.shape)
+    print(pred.shape)
     loss = cross_entropy2d(pred, y)
     print(loss)
 
