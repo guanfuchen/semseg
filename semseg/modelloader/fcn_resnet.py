@@ -321,6 +321,17 @@ def fcn_resnet50(module_type='32s', n_classes=21, pretrained=False):
         model.init_weight('fcn_resnet50')
     return model
 
+def fcn_resnet50_32s(n_classes=21, pretrained=False):
+    model = fcn_resnet50(module_type='32s', n_classes=n_classes, pretrained=pretrained)
+    return model
+
+def fcn_resnet50_16s(n_classes=21, pretrained=False):
+    model = fcn_resnet50(module_type='16s', n_classes=n_classes, pretrained=pretrained)
+    return model
+
+def fcn_resnet50_8s(n_classes=21, pretrained=False):
+    model = fcn_resnet50(module_type='8s', n_classes=n_classes, pretrained=pretrained)
+    return model
 
 def fcn_resnet101(module_type='32s', n_classes=21, pretrained=False):
     """Constructs a ResNet-101 model.
