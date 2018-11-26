@@ -8,6 +8,7 @@ import time
 import numpy as np
 import visdom
 from torch.autograd import Variable
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from semseg.dataloader.camvid_loader import camvidLoader
 from semseg.dataloader.cityscapes_loader import cityscapesLoader
@@ -29,7 +30,7 @@ from semseg.modelloader.fcn_resnet import fcn_resnet18, fcn_resnet34, fcn_resnet
 from semseg.modelloader.segnet import segnet, segnet_squeeze, segnet_alignres, segnet_vgg19
 from semseg.modelloader.segnet_unet import segnet_unet
 from semseg.modelloader.sqnet import sqnet
-
+from semseg.utils.get_class_weights import median_frequency_balancing, ENet_weighing
 
 
 def train(args):
@@ -75,16 +76,23 @@ def train(args):
         callback_text_usage_window = vis.text(vis_text_usage)
         vis.register_event_handler(type_callback, callback_text_usage_window)
 
-    # if args.dataset_path == '':
-    #     HOME_PATH = os.path.expanduser('~')
-    #     local_path = os.path.join(HOME_PATH, 'Data/CamVid')
-    # else:
+    class_weight = None
     local_path = os.path.expanduser(args.dataset_path)
     train_dst = None
     val_dst = None
     if args.dataset == 'CamVid':
         train_dst = camvidLoader(local_path, is_transform=True, is_augment=args.data_augment, split='train')
-        val_dst = camvidLoader(local_path, is_transform=True, is_augment=args.data_augment, split='val')
+        val_dst = camvidLoader(local_path, is_transform=True, is_augment=False, split='val')
+
+        trainannot_image_dir = os.path.expanduser(os.path.join(local_path, "trainannot"))
+        trainannot_image_files = [os.path.join(trainannot_image_dir, file) for file in os.listdir(trainannot_image_dir) if file.endswith('.png')]
+        if args.class_weighting=='MFB':
+            class_weight = median_frequency_balancing(trainannot_image_files, num_classes=12)
+            class_weight = torch.tensor(class_weight)
+        elif args.class_weighting=='ENET':
+            class_weight = ENet_weighing(trainannot_image_files, num_classes=12)
+            class_weight = torch.tensor(class_weight)
+
     elif args.dataset == 'CityScapes':
         train_dst = cityscapesLoader(local_path, is_transform=True)
         val_dst = cityscapesLoader(local_path, is_transform=True)
@@ -92,9 +100,12 @@ def train(args):
         print('{} dataset does not implement'.format(args.dataset))
         exit(0)
 
+    if args.cuda:
+        class_weight = class_weight.cuda()
+    print('class_weight:', class_weight)
 
     train_loader = torch.utils.data.DataLoader(train_dst, batch_size=args.batch_size, shuffle=True)
-    val_loader = torch.utils.data.DataLoader(val_dst, batch_size=args.batch_size, shuffle=True)
+    val_loader = torch.utils.data.DataLoader(val_dst, batch_size=1, shuffle=True)
 
     start_epoch = 0
     best_mIoU = 0
@@ -132,6 +143,7 @@ def train(args):
         model.cuda()
     print('start_epoch:', start_epoch)
     print('best_mIoU:', best_mIoU)
+
     if args.solver == 'SGD':
         optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr, momentum=0.99, weight_decay=5e-4)
     elif args.solver == 'RMSprop':
@@ -141,7 +153,8 @@ def train(args):
     else:
         print('missing solver or not support')
         exit(0)
-    # optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, betas=(0.9, 0.999), eps=1e-08, weight_decay=1e-4)
+    # when observerd object dose not decrease scheduler will let the optimizer learing rate decrease
+    scheduler = ReduceLROnPlateau(optimizer, 'min', patience=100, min_lr=1e-10, verbose=True)
 
     data_count = int(train_dst.__len__() * 1.0 / args.batch_size)
     print('data_count:', data_count)
@@ -166,7 +179,7 @@ def train(args):
             # 一次backward后如果不清零，梯度是累加的
             optimizer.zero_grad()
 
-            loss = cross_entropy2d(outputs, labels)
+            loss = cross_entropy2d(outputs, labels, weight=class_weight)
             loss_np = loss.cpu().data.numpy()
             loss_epoch += loss_np
             loss.backward()
@@ -236,6 +249,7 @@ def train(args):
                         win_res = vis.line(X=np.ones(1)*epoch*args.val_interval, Y=v_iou_expand, win=win, update='append')
                         if win_res != win:
                             vis.line(X=np.ones(1)*epoch*args.val_interval, Y=v_iou_expand, win=win, opts=dict(title=win, xlabel='epoch', ylabel='mIoU'))
+                    scheduler.step(v_iou)
 
             for class_i in range(args.n_classes):
                 print(class_i, class_iou[class_i])
@@ -269,11 +283,12 @@ if __name__=='__main__':
     parser.add_argument('--init_vgg16', type=bool, default=False, help='init model using vgg16 weights [ False ]')
     parser.add_argument('--dataset', type=str, default='CamVid', help='train dataset [ CamVid CityScapes ]')
     parser.add_argument('--dataset_path', type=str, default='~/Data/CamVid', help='train dataset path [ ~/Data/CamVid ~/Data/cityscapes ]')
-    parser.add_argument('--data_augment', type=bool, default=False, help='enlarge the training data [ False ]')
+    parser.add_argument('--data_augment', type=bool, default=True, help='enlarge the training data [ True False ]')
+    parser.add_argument('--class_weighting', type=str, default='MFB', help='weighting class [ MFB ENET ]')
     parser.add_argument('--batch_size', type=int, default=1, help='train dataset batch size [ 1 ]')
     parser.add_argument('--val_interval', type=int, default=3, help='val dataset interval unit epoch [ 3 ]')
     parser.add_argument('--n_classes', type=int, default=12, help='train class num [ 12 ]')
-    parser.add_argument('--lr', type=float, default=1e-5, help='train learning rate [ 0.00001 ]')
+    parser.add_argument('--lr', type=float, default=1e-10, help='train learning rate [ 0.00001 ]')
     parser.add_argument('--vis', type=bool, default=False, help='visualize the training results [ False ]')
     parser.add_argument('--cuda', type=bool, default=False, help='use cuda [ False ]')
     args = parser.parse_args()

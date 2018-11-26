@@ -13,7 +13,7 @@ from torch.utils import data
 from torchvision import transforms
 import glob
 
-from semseg.dataloader.utils import Compose, RandomHorizontallyFlip, RandomRotate
+from semseg.dataloader.utils import Compose, RandomHorizontallyFlip, RandomRotate, RandomSized
 
 
 class camvidLoader(data.Dataset):
@@ -29,9 +29,8 @@ class camvidLoader(data.Dataset):
         self.is_augment = is_augment
         if self.is_augment:
             self.joint_augment_transform = Compose([
+                RandomRotate(degree=10),
                 RandomHorizontallyFlip(),
-                RandomRotate(degree=90)
-                # transforms.ToTensor()
             ])
 
         # file_list = os.listdir(root + '/' + split)

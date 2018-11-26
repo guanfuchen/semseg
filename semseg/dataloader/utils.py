@@ -80,7 +80,7 @@ class CenterCrop(object):
 class RandomHorizontallyFlip(object):
     def __call__(self, img, mask):
         if random.random() < 0.5:
-            print('RandomHorizontallyFlip----FLIP_LEFT_RIGHT')
+            # print('RandomHorizontallyFlip----FLIP_LEFT_RIGHT')
             return img.transpose(Image.FLIP_LEFT_RIGHT), mask.transpose(Image.FLIP_LEFT_RIGHT)
         return img, mask
 
@@ -153,7 +153,7 @@ class RandomRotate(object):
 
     def __call__(self, img, mask):
         rotate_degree = random.random() * 2 * self.degree - self.degree
-        print('RandomRotate----{}'.format(rotate_degree))
+        # print('RandomRotate----{}'.format(rotate_degree))
         return img.rotate(rotate_degree, Image.BILINEAR), mask.rotate(rotate_degree, Image.NEAREST)
 
 
