@@ -67,9 +67,11 @@ def train(args):
 
     init_time = str(int(time.time()))
     if args.vis:
+        # start visdom and close all window
         vis = visdom.Visdom()
-        vis_text_usage = 'Operating in the text window<br>Press s to save data<br>'
+        vis.close()
 
+        vis_text_usage = 'Operating in the text window<br>Press s to save data<br>'
         callback_text_usage_window = vis.text(vis_text_usage)
         vis.register_event_handler(type_callback, callback_text_usage_window)
 
@@ -129,6 +131,7 @@ def train(args):
     if args.cuda:
         model.cuda()
     print('start_epoch:', start_epoch)
+    print('best_mIoU:', best_mIoU)
     if args.solver == 'SGD':
         optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr, momentum=0.99, weight_decay=5e-4)
     elif args.solver == 'RMSprop':
@@ -144,10 +147,6 @@ def train(args):
     print('data_count:', data_count)
     for epoch in range(start_epoch+1, 20000, 1):
         loss_epoch = 0
-        loss_avg_epoch = 0
-        # data_count = 0
-        # if args.vis:
-        #     vis.text('epoch:{}'.format(epoch), win='epoch')
         for i, (imgs, labels) in enumerate(train_loader):
             model.train()
 
@@ -155,8 +154,6 @@ def train(args):
             imgs_batch = imgs.shape[0]
             if imgs_batch != args.batch_size:
                 break
-            # print(i)
-            # data_count = i
 
             imgs = Variable(imgs)
             labels = Variable(labels)
@@ -165,7 +162,6 @@ def train(args):
                 imgs = imgs.cuda()
                 labels = labels.cuda()
             outputs = model(imgs)
-            # print('type(outputs):', type(outputs))
 
             # 一次backward后如果不清零，梯度是累加的
             optimizer.zero_grad()
@@ -173,56 +169,18 @@ def train(args):
             loss = cross_entropy2d(outputs, labels)
             loss_np = loss.cpu().data.numpy()
             loss_epoch += loss_np
-            # print('loss:', loss_np)
             loss.backward()
 
             optimizer.step()
 
-            # val result on val dataset and pick best to save
-            if i==data_count-1 and epoch%args.val_interval==0:
-                print('----starting val----')
-                model.eval()
-
-                val_gts, val_preds = [], []
-                for val_i, (val_imgs, val_labels) in enumerate(val_loader):
-                    # print(val_i)
-                    val_imgs = Variable(val_imgs)
-                    val_labels = Variable(val_labels)
-
-                    if args.cuda:
-                        val_imgs = val_imgs.cuda()
-                        val_labels = val_labels.cuda()
-
-                    val_outputs = model(val_imgs)
-                    val_pred = val_outputs.cpu().data.max(1)[1].numpy()
-                    val_gt = val_labels.cpu().data.numpy()
-                    for val_gt_, val_pred_ in zip(val_gt, val_pred):
-                        val_gts.append(val_gt_)
-                        val_preds.append(val_pred_)
-
-                score, class_iou = scores(val_gts, val_preds, n_class=args.n_classes)
-                for k, v in score.items():
-                    print(k, v)
-                    if k=='Mean IoU : \t':
-                        if v>best_mIoU:
-                            best_mIoU = v
-                            torch.save(model.state_dict(), '{}_camvid_miou_{}_class_{}_{}.pt'.format(args.structure, best_mIoU, args.n_classes, epoch))
-
-                for class_i in range(args.n_classes):
-                    print(class_i, class_iou[class_i])
-                print('----ending   val----')
-
             if args.vis and i%50==0:
                 pred_labels = outputs.cpu().data.max(1)[1].numpy()
-                # print(pred_labels.shape)
                 label_color = train_dst.decode_segmap(labels.cpu().data.numpy()[0]).transpose(2, 0, 1)
-                # print(label_color.shape)
                 pred_label_color = train_dst.decode_segmap(pred_labels[0]).transpose(2, 0, 1)
-                # print(pred_label_color.shape)
                 win = 'label_color'
-                vis.image(label_color, win=win)
+                vis.image(label_color, win=win, opts=dict(title='Gt', caption='Ground Truth'))
                 win = 'pred_label_color'
-                vis.image(pred_label_color, win=win)
+                vis.image(pred_label_color, win=win, opts=dict(title='Pred', caption='Prediction'))
 
                 # if epoch < 100:
                 #     if not os.path.exists('/tmp/'+init_time):
@@ -239,13 +197,49 @@ def train(args):
                 loss_np_expand = np.expand_dims(loss_np, axis=0)
                 win_res = vis.line(X=np.ones(1)*(i+data_count*(epoch-1)+1), Y=loss_np_expand, win=win, update='append')
                 if win_res != win:
-                    vis.line(X=np.ones(1)*(i+1), Y=loss_np_expand, win=win)
-                # if i+data_count*(epoch-1)==0:
-                #     vis.register_event_handler(type_callback, win_res)
-        # 关闭清空一个周期的loss，目标不清空
-        # if args.vis:
-        #     win = 'loss_iteration'
-        #     vis.close(win)
+                    vis.line(X=np.ones(1)*(i+data_count*(epoch-1)+1), Y=loss_np_expand, win=win, opts=dict(title=win, xlabel='iteration', ylabel='loss'))
+
+        # val result on val dataset and pick best to save
+        if epoch % args.val_interval == 0:
+            print('----starting val----')
+            model.eval()
+
+            val_gts, val_preds = [], []
+            for val_i, (val_imgs, val_labels) in enumerate(val_loader):
+                # print(val_i)
+                val_imgs = Variable(val_imgs)
+                val_labels = Variable(val_labels)
+
+                if args.cuda:
+                    val_imgs = val_imgs.cuda()
+                    val_labels = val_labels.cuda()
+
+                val_outputs = model(val_imgs)
+                val_pred = val_outputs.cpu().data.max(1)[1].numpy()
+                val_gt = val_labels.cpu().data.numpy()
+                for val_gt_, val_pred_ in zip(val_gt, val_pred):
+                    val_gts.append(val_gt_)
+                    val_preds.append(val_pred_)
+
+            score, class_iou = scores(val_gts, val_preds, n_class=args.n_classes)
+            for k, v in score.items():
+                print(k, v)
+                if k == 'Mean IoU : \t':
+                    v_iou = v
+                    if v > best_mIoU:
+                        best_mIoU = v_iou
+                        torch.save(model.state_dict(), '{}_camvid_miou_{}_class_{}_{}.pt'.format(args.structure, best_mIoU, args.n_classes, epoch))
+                    # 显示校准周期的mIoU
+                    if args.vis:
+                        win = 'mIoU_epoch'
+                        v_iou_expand = np.expand_dims(v_iou, axis=0)
+                        win_res = vis.line(X=np.ones(1)*epoch*args.val_interval, Y=v_iou_expand, win=win, update='append')
+                        if win_res != win:
+                            vis.line(X=np.ones(1)*epoch*args.val_interval, Y=v_iou_expand, win=win, opts=dict(title=win, xlabel='epoch', ylabel='mIoU'))
+
+            for class_i in range(args.n_classes):
+                print(class_i, class_iou[class_i])
+            print('----ending   val----')
 
         # 显示多个周期的loss曲线
         loss_avg_epoch = loss_epoch / (data_count * 1.0)
@@ -255,7 +249,7 @@ def train(args):
             loss_avg_epoch_expand = np.expand_dims(loss_avg_epoch, axis=0)
             win_res = vis.line(X=np.ones(1)*epoch, Y=loss_avg_epoch_expand, win=win, update='append')
             if win_res != win:
-                vis.line(X=np.ones(1)*epoch, Y=loss_avg_epoch_expand, win=win)
+                vis.line(X=np.ones(1)*epoch, Y=loss_avg_epoch_expand, win=win, opts=dict(title=win, xlabel='epoch', ylabel='loss'))
 
         # if args.save_model and epoch%args.save_epoch==0:
         #     torch.save(model.state_dict(), '{}_camvid_class_{}_{}.pt'.format(args.structure, args.n_classes, epoch))
@@ -283,8 +277,6 @@ if __name__=='__main__':
     parser.add_argument('--vis', type=bool, default=False, help='visualize the training results [ False ]')
     parser.add_argument('--cuda', type=bool, default=False, help='use cuda [ False ]')
     args = parser.parse_args()
-    # print(args.resume_model)
-    # print(args.save_model)
     print(args)
     train(args)
     # print('train----out----')
