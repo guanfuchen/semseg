@@ -8,7 +8,7 @@ import time
 import numpy as np
 import visdom
 from torch.autograd import Variable
-from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch.optim.lr_scheduler import ReduceLROnPlateau, StepLR
 
 from semseg.dataloader.camvid_loader import camvidLoader
 from semseg.dataloader.cityscapes_loader import cityscapesLoader
@@ -16,8 +16,7 @@ from semseg.loss import cross_entropy2d
 from semseg.metrics import scores
 from semseg.modelloader.EDANet import EDANet
 from semseg.modelloader.deeplabv3 import Res_Deeplab_101, Res_Deeplab_50
-from semseg.modelloader.drn import drn_d_22, DRNSeg, drn_a_asymmetric_18, drnseg_a_50, drnseg_a_18, drnseg_e_22, \
-    drnseg_a_asymmetric_18, drnseg_d_22
+from semseg.modelloader.drn import drn_d_22, DRNSeg, drn_a_asymmetric_18, drnseg_a_50, drnseg_a_18, drnseg_e_22, drnseg_a_asymmetric_18, drnseg_d_22
 from semseg.modelloader.duc_hdc import ResNetDUC, ResNetDUCHDC
 from semseg.modelloader.enet import ENet
 from semseg.modelloader.enetv2 import ENetV2
@@ -30,6 +29,7 @@ from semseg.modelloader.fcn_resnet import fcn_resnet18, fcn_resnet34, fcn_resnet
 from semseg.modelloader.segnet import segnet, segnet_squeeze, segnet_alignres, segnet_vgg19
 from semseg.modelloader.segnet_unet import segnet_unet
 from semseg.modelloader.sqnet import sqnet
+from semseg.schedulers import ConstantLR, PolynomialLR
 from semseg.utils.get_class_weights import median_frequency_balancing, ENet_weighing
 
 
@@ -101,7 +101,8 @@ def train(args):
         exit(0)
 
     if args.cuda:
-        class_weight = class_weight.cuda()
+        if class_weight is not None:
+            class_weight = class_weight.cuda()
     print('class_weight:', class_weight)
 
     train_loader = torch.utils.data.DataLoader(train_dst, batch_size=args.batch_size, shuffle=True)
@@ -154,12 +155,21 @@ def train(args):
         print('missing solver or not support')
         exit(0)
     # when observerd object dose not decrease scheduler will let the optimizer learing rate decrease
-    scheduler = ReduceLROnPlateau(optimizer, 'min', patience=100, min_lr=1e-10, verbose=True)
+    # scheduler = ReduceLROnPlateau(optimizer, 'min', patience=100, min_lr=1e-10, verbose=True)
+    if args.lr_policy == 'Constant':
+        scheduler = ConstantLR(optimizer)
+    elif args.lr_policy == 'Polynomial':
+        scheduler = PolynomialLR(optimizer, max_iter=args.training_epoch, power=0.9) # base lr=0.01 power=0.9 like PSPNet
+
+    # scheduler = StepLR(optimizer, step_size=1, gamma=0.1)
 
     data_count = int(train_dst.__len__() * 1.0 / args.batch_size)
     print('data_count:', data_count)
-    for epoch in range(start_epoch+1, 20000, 1):
+    # iteration_step = 0
+    for epoch in range(start_epoch+1, args.training_epoch, 1):
         loss_epoch = 0
+        scheduler.step()
+
         for i, (imgs, labels) in enumerate(train_loader):
             model.train()
 
@@ -167,6 +177,7 @@ def train(args):
             imgs_batch = imgs.shape[0]
             if imgs_batch != args.batch_size:
                 break
+            # iteration_step += 1
 
             imgs = Variable(imgs)
             labels = Variable(labels)
@@ -175,6 +186,7 @@ def train(args):
                 imgs = imgs.cuda()
                 labels = labels.cuda()
             outputs = model(imgs)
+            # print('outputs.shape:', outputs.shape)
 
             # 一次backward后如果不清零，梯度是累加的
             optimizer.zero_grad()
@@ -213,7 +225,7 @@ def train(args):
                     vis.line(X=np.ones(1)*(i+data_count*(epoch-1)+1), Y=loss_np_expand, win=win, opts=dict(title=win, xlabel='iteration', ylabel='loss'))
 
         # val result on val dataset and pick best to save
-        if epoch % args.val_interval == 0:
+        if args.val_interval > 0  and epoch % args.val_interval == 0:
             print('----starting val----')
             model.eval()
 
@@ -249,7 +261,6 @@ def train(args):
                         win_res = vis.line(X=np.ones(1)*epoch*args.val_interval, Y=v_iou_expand, win=win, update='append')
                         if win_res != win:
                             vis.line(X=np.ones(1)*epoch*args.val_interval, Y=v_iou_expand, win=win, opts=dict(title=win, xlabel='epoch', ylabel='mIoU'))
-                    scheduler.step(v_iou)
 
             for class_i in range(args.n_classes):
                 print(class_i, class_iou[class_i])
@@ -264,6 +275,14 @@ def train(args):
             win_res = vis.line(X=np.ones(1)*epoch, Y=loss_avg_epoch_expand, win=win, update='append')
             if win_res != win:
                 vis.line(X=np.ones(1)*epoch, Y=loss_avg_epoch_expand, win=win, opts=dict(title=win, xlabel='epoch', ylabel='loss'))
+
+        if args.vis:
+            win = 'lr_epoch'
+            lr_epoch = np.array(scheduler.get_lr())
+            lr_epoch_expand = np.expand_dims(lr_epoch, axis=0)
+            win_res = vis.line(X=np.ones(1)*epoch, Y=lr_epoch_expand, win=win, update='append')
+            if win_res != win:
+                vis.line(X=np.ones(1)*epoch, Y=lr_epoch_expand, win=win, opts=dict(title=win, xlabel='epoch', ylabel='lr'))
 
         # if args.save_model and epoch%args.save_epoch==0:
         #     torch.save(model.state_dict(), '{}_camvid_class_{}_{}.pt'.format(args.structure, args.n_classes, epoch))
@@ -280,16 +299,18 @@ if __name__=='__main__':
     parser.add_argument('--resume_model_state_dict', type=str, default='', help='resume model state dict path [ fcn32s_camvid_9.pt ]')
     parser.add_argument('--save_model', type=bool, default=False, help='save model [ False ]')
     parser.add_argument('--save_epoch', type=int, default=1, help='save model after epoch [ 1 ]')
+    parser.add_argument('--training_epoch', type=int, default=500, help='training epoch end training model [ 30000 ]')
     parser.add_argument('--init_vgg16', type=bool, default=False, help='init model using vgg16 weights [ False ]')
     parser.add_argument('--dataset', type=str, default='CamVid', help='train dataset [ CamVid CityScapes ]')
     parser.add_argument('--dataset_path', type=str, default='~/Data/CamVid', help='train dataset path [ ~/Data/CamVid ~/Data/cityscapes ]')
     parser.add_argument('--data_augment', type=bool, default=True, help='enlarge the training data [ True False ]')
     parser.add_argument('--class_weighting', type=str, default='MFB', help='weighting class [ MFB ENET ]')
     parser.add_argument('--batch_size', type=int, default=1, help='train dataset batch size [ 1 ]')
-    parser.add_argument('--val_interval', type=int, default=3, help='val dataset interval unit epoch [ 3 ]')
+    parser.add_argument('--val_interval', type=int, default=-1, help='val dataset interval unit epoch [ 3 ]')
     parser.add_argument('--n_classes', type=int, default=12, help='train class num [ 12 ]')
-    parser.add_argument('--lr', type=float, default=1e-10, help='train learning rate [ 0.00001 ]')
-    parser.add_argument('--vis', type=bool, default=False, help='visualize the training results [ False ]')
+    parser.add_argument('--lr', type=float, default=1e-4, help='train learning rate [ 0.00001 ]')
+    parser.add_argument('--lr_policy', type=str, default='Polynomial', help='train learning policy [ Constant Polynomial ]')
+    parser.add_argument('--vis', type=bool, default=True, help='visualize the training results [ False ]')
     parser.add_argument('--cuda', type=bool, default=False, help='use cuda [ False ]')
     args = parser.parse_args()
     print(args)

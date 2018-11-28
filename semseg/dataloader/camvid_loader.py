@@ -13,14 +13,14 @@ from torch.utils import data
 from torchvision import transforms
 import glob
 
-from semseg.dataloader.utils import Compose, RandomHorizontallyFlip, RandomRotate, RandomSized
+from semseg.dataloader.utils import Compose, RandomHorizontallyFlip, RandomRotate, RandomSized, RandomCrop
 
 
 class camvidLoader(data.Dataset):
     def __init__(self, root, split="train", is_transform=False, is_augment=False):
         self.root = root
         self.split = split
-        self.img_size = [360, 480]
+        self.img_size = (360, 480) # (h, w)
         self.is_transform = is_transform
         self.mean = np.array([104.00699, 116.66877, 122.67892])
         self.n_classes = 12
@@ -29,6 +29,8 @@ class camvidLoader(data.Dataset):
         self.is_augment = is_augment
         if self.is_augment:
             self.joint_augment_transform = Compose([
+                # RandomSized(int(min(self.img_size)/0.875)),
+                # RandomCrop(self.img_size),
                 RandomRotate(degree=10),
                 RandomHorizontallyFlip(),
             ])

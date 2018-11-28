@@ -128,7 +128,7 @@ def performance_table(args):
 if __name__=='__main__':
     # print('train----in----')
     parser = argparse.ArgumentParser(description='training parameter setting')
-    parser.add_argument('--structure', type=str, default='fcn32s', help='use the net structure to segment [ fcn32s ResNetDUC segnet ENet drn_d_22 ]')
+    parser.add_argument('--structure', type=str, default='ALL', help='use the net structure to segment [ fcn32s ResNetDUC segnet ENet drn_d_22 ]')
     parser.add_argument('--resume_model', type=str, default='', help='resume model path [ fcn32s_camvid_9.pkl ]')
     parser.add_argument('--resume_model_state_dict', type=str, default='', help='resume model state dict path [ fcn32s_camvid_9.pt ]')
     parser.add_argument('--save_model', type=bool, default=False, help='save model [ False ]')
@@ -161,12 +161,15 @@ if __name__=='__main__':
         'Res_Deeplab_101', 'Res_Deeplab_50',
         'EDANet'
     ]
-    for structure in structures:
-        print('-----------------------------------------------------------------------------')
-        args.structure = structure
-        print(args)
-        print('structure:', args.structure)
+    if args.structure == 'ALL':
+        for structure in structures:
+            print('-----------------------------------------------------------------------------')
+            args.structure = structure
+            print(args)
+            print('structure:', args.structure)
+            performance_table(args)
+            print('-----------------------------------------------------------------------------')
+    else:
         performance_table(args)
-        print('-----------------------------------------------------------------------------')
     # print('train----out----')
 
