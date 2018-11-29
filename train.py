@@ -94,8 +94,8 @@ def train(args):
             class_weight = torch.tensor(class_weight)
 
     elif args.dataset == 'CityScapes':
-        train_dst = cityscapesLoader(local_path, is_transform=True)
-        val_dst = cityscapesLoader(local_path, is_transform=True)
+        train_dst = cityscapesLoader(local_path, is_transform=True, split='train')
+        val_dst = cityscapesLoader(local_path, is_transform=True, split='val')
     else:
         print('{} dataset does not implement'.format(args.dataset))
         exit(0)
@@ -190,6 +190,9 @@ def train(args):
 
             # 一次backward后如果不清零，梯度是累加的
             optimizer.zero_grad()
+
+            # print('outputs.size:', outputs.size())
+            # print('labels.size:', labels.size())
 
             loss = cross_entropy2d(outputs, labels, weight=class_weight)
             loss_np = loss.cpu().data.numpy()
