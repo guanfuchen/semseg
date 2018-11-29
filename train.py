@@ -16,7 +16,7 @@ from semseg.loss import cross_entropy2d
 from semseg.metrics import scores
 from semseg.modelloader.EDANet import EDANet
 from semseg.modelloader.deeplabv3 import Res_Deeplab_101, Res_Deeplab_50
-from semseg.modelloader.drn import drn_d_22, DRNSeg, drn_a_asymmetric_18, drnseg_a_50, drnseg_a_18, drnseg_e_22, drnseg_a_asymmetric_18, drnseg_d_22
+from semseg.modelloader.drn import drn_d_22, DRNSeg, drn_a_asymmetric_18, drn_a_asymmetric_ibn_a_18, drnseg_a_50, drnseg_a_18, drnseg_e_22, drnseg_a_asymmetric_18, drnseg_a_asymmetric_ibn_a_18, drnseg_d_22
 from semseg.modelloader.duc_hdc import ResNetDUC, ResNetDUCHDC
 from semseg.modelloader.enet import ENet
 from semseg.modelloader.enetv2 import ENetV2
@@ -256,7 +256,7 @@ def train(args):
                     v_iou = v
                     if v > best_mIoU:
                         best_mIoU = v_iou
-                        torch.save(model.state_dict(), '{}_camvid_miou_{}_class_{}_{}.pt'.format(args.structure, best_mIoU, args.n_classes, epoch))
+                        torch.save(model.state_dict(), '{}_{}_miou_{}_class_{}_{}.pt'.format(args.structure, args.dataset, best_mIoU, args.n_classes, epoch))
                     # 显示校准周期的mIoU
                     if args.vis:
                         win = 'mIoU_epoch'
@@ -287,8 +287,8 @@ def train(args):
             if win_res != win:
                 vis.line(X=np.ones(1)*epoch, Y=lr_epoch_expand, win=win, opts=dict(title=win, xlabel='epoch', ylabel='lr'))
 
-        # if args.save_model and epoch%args.save_epoch==0:
-        #     torch.save(model.state_dict(), '{}_camvid_class_{}_{}.pt'.format(args.structure, args.n_classes, epoch))
+        if args.save_model and epoch%args.save_epoch==0:
+            torch.save(model.state_dict(), '{}_{}_class_{}_{}.pt'.format(args.structure, args.dataset, args.n_classes, epoch))
 
 
 # best training: python train.py --resume_model fcn32s_camvid_9.pkl --save_model True

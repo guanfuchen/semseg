@@ -13,7 +13,8 @@ from torch.autograd import Variable
 from torchvision import models
 
 from semseg.loss import cross_entropy2d
-from semseg.modelloader.utils import AlignedResInception, ASPP_Classifier_Module
+from semseg.modelloader.utils import AlignedResInception, ASPP_Classifier_Module, IBN
+
 # from semseg.pytorch_modelsize import SizeEstimator
 
 webroot = 'https://tigress-web.princeton.edu/~fy/drn/models/'
@@ -50,6 +51,49 @@ class BasicBlock_asymmetric(nn.Module):
         # self.conv1 = conv3x3(inplanes, planes, stride, padding=dilation[0], dilation=dilation[0])
         self.conv1 = conv3x3_asymmetric(inplanes, planes, stride, padding=dilation[0], dilation=dilation[0])
         self.bn1 = nn.BatchNorm2d(planes)
+        for i in self.bn1.parameters():
+            i.requires_grad = False
+        self.relu = nn.ReLU(inplace=True)
+        # self.conv2 = conv3x3(planes, planes, padding=dilation[1], dilation=dilation[1])
+        self.conv2 = conv3x3_asymmetric(planes, planes, padding=dilation[1], dilation=dilation[1])
+        self.bn2 = nn.BatchNorm2d(planes)
+        for i in self.bn2.parameters():
+            i.requires_grad = False
+        self.downsample = downsample
+        self.stride = stride
+        self.residual = residual
+
+    def forward(self, x):
+        residual = x
+
+        # print(x.data.size())
+        out = self.conv1(x)
+        # print(out.data.size())
+        out = self.bn1(out)
+        out = self.relu(out)
+
+        out = self.conv2(out)
+        out = self.bn2(out)
+
+        if self.downsample is not None:
+            residual = self.downsample(x)
+        if self.residual:
+            out += residual
+        out = self.relu(out)
+
+        return out
+
+class BasicBlock_asymmetric_ibn_a(nn.Module):
+    expansion = 1
+
+    def __init__(self, inplanes, planes, stride=1, downsample=None, dilation=(1, 1), residual=True):
+        super(BasicBlock_asymmetric_ibn_a, self).__init__()
+        # dilation默认为(1,1)由两个dilation的卷积模块构成，由于stride=1，dilation为1，kernel为3
+        # 那么相当于kernel为6的卷积核，padding为1
+        # self.conv1 = conv3x3(inplanes, planes, stride, padding=dilation[0], dilation=dilation[0])
+        self.conv1 = conv3x3_asymmetric(inplanes, planes, stride, padding=dilation[0], dilation=dilation[0])
+        # self.bn1 = nn.BatchNorm2d(planes)
+        self.bn1 = IBN(planes)
         for i in self.bn1.parameters():
             i.requires_grad = False
         self.relu = nn.ReLU(inplace=True)
@@ -431,6 +475,12 @@ def drn_a_asymmetric_18(pretrained=False, **kwargs):
     #     model.load_state_dict(model_zoo.load_url('https://s3.amazonaws.com/pytorch/models/resnet18-5c106cde.pth'))
     return model
 
+def drn_a_asymmetric_ibn_a_18(pretrained=False, **kwargs):
+    model = DRN_A(BasicBlock_asymmetric_ibn_a, [2, 2, 2, 2], **kwargs)
+    # if pretrained:
+    #     model.load_state_dict(model_zoo.load_url('https://s3.amazonaws.com/pytorch/models/resnet18-5c106cde.pth'))
+    return model
+
 def drn_a_34(pretrained=False, **kwargs):
     model = DRN_A(BasicBlock, [3, 4, 6, 3], **kwargs)
     # if pretrained:
@@ -537,6 +587,10 @@ def drnseg_a_18(pretrained=False, n_classes=21):
 
 def drnseg_a_asymmetric_18(pretrained=False, n_classes=21):
     model = DRNSeg(model_name='drn_a_asymmetric_18', n_classes=n_classes, pretrained=pretrained)
+    return model
+
+def drnseg_a_asymmetric_ibn_a_18(pretrained=False, n_classes=21):
+    model = DRNSeg(model_name='drn_a_asymmetric_ibn_a_18', n_classes=n_classes, pretrained=pretrained)
     return model
 
 def drnseg_a_34(pretrained=False, n_classes=21):
