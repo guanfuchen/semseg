@@ -48,7 +48,7 @@ def validate(args):
         dst = cityscapesLoader(local_path, is_transform=True)
     else:
         pass
-    val_loader = torch.utils.data.DataLoader(dst, batch_size=1)
+    val_loader = torch.utils.data.DataLoader(dst, batch_size=1, shuffle=False)
 
     # if os.path.isfile(args.validate_model):
     if args.validate_model != '':
@@ -61,16 +61,23 @@ def validate(args):
             exit(0)
         if args.validate_model_state_dict != '':
             try:
-                model.load_state_dict(torch.load(args.validate_model_state_dict))
+                model.load_state_dict(torch.load(args.validate_model_state_dict, map_location='cpu'))
             except KeyError:
                 print('missing key')
     if args.cuda:
         model.cuda()
     model.eval()
 
-    gts, preds = [], []
+    gts, preds, errors, imgs_name = [], [], [], []
     for i, (imgs, labels) in enumerate(val_loader):
         print(i)
+        # if i==5:
+        #     break
+        img_path = dst.files[args.dataset_type][i]
+        img_name = img_path[img_path.rfind('/')+1:]
+        imgs_name.append(img_name)
+        # print('img_path:', img_path)
+        # print('img_name:', img_name)
         #  print(labels.shape)
         #  print(imgs.shape)
         # 将np变量转换为pytorch中的变量
@@ -82,54 +89,48 @@ def validate(args):
             labels = labels.cuda()
 
         outputs = model(imgs)
+        loss = cross_entropy2d(outputs, labels)
+        loss_np = loss.cpu().data.numpy()
+        loss_np_float = float(loss_np)
+
+        # print('loss_np_float:', loss_np_float)
+        errors.append(loss_np_float)
+
         # 取axis=1中的最大值，outputs的shape为batch_size*n_classes*height*width，
         # 获取max后，返回两个数组，分别是最大值和相应的索引值，这里取索引值为label
         pred = outputs.cpu().data.max(1)[1].numpy()
         gt = labels.cpu().data.numpy()
-        # print(pred.dtype)
-        # print(gt.dtype)
-        # print('pred.shape:', pred.shape)
-        # print('gt.shape:', gt.shape)
 
-        # if args.vis and i % 1 == 0:
-        #     img = imgs.cpu().data.numpy()[0]
-        #     # print(img.shape)
-        #     label_color = dst.decode_segmap(gt[0]).transpose(2, 0, 1)
-        #     # print(label_color.shape)
-        #     pred_label_color = dst.decode_segmap(pred[0]).transpose(2, 0, 1)
-        #     # print(pred_label_color.shape)
-        #     # try:
-        #     #     win = 'label_color'
-        #     #     vis.image(label_color, win=win)
-        #     #     win = 'pred_label_color'
-        #     #     vis.image(pred_label_color, win=win)
-        #     # except ConnectionError:
-        #     #     print('ConnectionError')
-        #
-        #
-        #     if args.blend:
-        #         img_hwc = img.transpose(1, 2, 0)
-        #         img_hwc = img_hwc*255.0
-        #         img_hwc += np.array([104.00699, 116.66877, 122.67892])
-        #         img_hwc = np.array(img_hwc, dtype=np.uint8)
-        #         # label_color_hwc = label_color.transpose(1, 2, 0)
-        #         pred_label_color_hwc = pred_label_color.transpose(1, 2, 0)
-        #         pred_label_color_hwc = np.array(pred_label_color_hwc, dtype=np.uint8)
-        #         # print(img_hwc.dtype)
-        #         # print(pred_label_color_hwc.dtype)
-        #         label_blend = img_hwc * 0.5 + pred_label_color_hwc * 0.5
-        #         label_blend = np.array(label_blend, dtype=np.uint8)
-        #
-        #         if not os.path.exists('/tmp/' + init_time):
-        #             os.mkdir('/tmp/' + init_time)
-        #         time_str = str(int(time.time()))
-        #
-        #         misc.imsave('/tmp/'+init_time+'/'+time_str+'_label_blend.png', label_blend)
+        if args.save_result:
+            if not os.path.exists('/tmp/'+init_time):
+                os.mkdir('/tmp/'+init_time)
+            pred_labels = outputs.cpu().data.max(1)[1].numpy()
+            label_color = dst.decode_segmap(labels.cpu().data.numpy()[0]).transpose(2, 0, 1)
+            pred_label_color = dst.decode_segmap(pred_labels[0]).transpose(2, 0, 1)
+
+            # label_color_cv2 = label_color.transpose(1, 2, 0)
+            # label_color_cv2 = cv2.cvtColor(label_color_cv2, cv2.COLOR_RGB2BGR)
+            # cv2.imwrite('/tmp/'+init_time+'/{}'.format(img_name), label_color_cv2)
+
+            pred_label_color_cv2 = pred_label_color.transpose(1, 2, 0)
+            pred_label_color_cv2 = cv2.cvtColor(pred_label_color_cv2, cv2.COLOR_RGB2BGR)
+            cv2.imwrite('/tmp/'+init_time+'/{}'.format(img_name), pred_label_color_cv2)
 
         for gt_, pred_ in zip(gt, pred):
             gts.append(gt_)
             preds.append(pred_)
 
+    # print('errors:', errors)
+    # print('imgs_name:', imgs_name)
+
+    errors_indices = np.argsort(errors).tolist()
+    # print('errors_indices:', errors_indices)
+    # for top_i in range(len(errors_indices)):
+    for top_i in range(10):
+        top_index = errors_indices.index(top_i)
+        # print('top_index:', top_index)
+        img_name_top = imgs_name[top_index]
+        print('img_name_top:', img_name_top)
 
     score, class_iou = scores(gts, preds, n_class=dst.n_classes)
     for k, v in score.items():
@@ -137,8 +138,8 @@ def validate(args):
 
     for i in range(dst.n_classes):
         print(i, class_iou[i])
-    # else:
-    #     print(args.validate_model, ' not exists')
+
+
 # best validate: python validate.py --structure fcn32s --validate_model_state_dict fcn32s_camvid_9.pt
 if __name__=='__main__':
     # print('validate----in----')
@@ -153,7 +154,7 @@ if __name__=='__main__':
     parser.add_argument('--n_classes', type=int, default=12, help='train class num [ 12 ]')
     parser.add_argument('--vis', type=bool, default=False, help='visualize the training results [ False ]')
     parser.add_argument('--cuda', type=bool, default=False, help='use cuda [ False ]')
-    parser.add_argument('--blend', type=bool, default=False, help='blend the result and the origin [ False ]')
+    parser.add_argument('--save_result', type=bool, default=False, help='save the val dataset prediction result [ False True ]')
     args = parser.parse_args()
     # print(args.resume_model)
     # print(args.save_model)

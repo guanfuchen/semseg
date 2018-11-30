@@ -133,7 +133,7 @@ def train(args):
                 start_epoch_id1 = args.resume_model_state_dict.rfind('_')
                 start_epoch_id2 = args.resume_model_state_dict.rfind('.')
                 start_epoch = int(args.resume_model_state_dict[start_epoch_id1 + 1:start_epoch_id2])
-                pretrained_dict = torch.load(args.resume_model_state_dict)
+                pretrained_dict = torch.load(args.resume_model_state_dict, map_location='cpu')
                 model.load_state_dict(pretrained_dict)
             except KeyError:
                 print('missing resume_model_state_dict or wrong type')
@@ -209,15 +209,6 @@ def train(args):
                 vis.image(label_color, win=win, opts=dict(title='Gt', caption='Ground Truth'))
                 win = 'pred_label_color'
                 vis.image(pred_label_color, win=win, opts=dict(title='Pred', caption='Prediction'))
-
-                # if epoch < 100:
-                #     if not os.path.exists('/tmp/'+init_time):
-                #         os.mkdir('/tmp/'+init_time)
-                #     time_str = str(int(time.time()))
-                #     print('label_color.transpose(2, 0, 1).shape:', label_color.transpose(1, 2, 0).shape)
-                #     print('pred_label_color.transpose(2, 0, 1).shape:', pred_label_color.transpose(1, 2, 0).shape)
-                #     cv2.imwrite('/tmp/'+init_time+'/'+time_str+'_label.png', label_color.transpose(1, 2, 0))
-                #     cv2.imwrite('/tmp/'+init_time+'/'+time_str+'_pred_label.png', pred_label_color.transpose(1, 2, 0))
 
             # 显示一个周期的loss曲线
             if args.vis:

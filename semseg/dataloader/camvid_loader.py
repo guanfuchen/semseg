@@ -145,7 +145,7 @@ class camvidLoader(data.Dataset):
             g[temp == l] = label_colours[l, 1]
             b[temp == l] = label_colours[l, 2]
 
-        rgb = np.zeros((temp.shape[0], temp.shape[1], 3))
+        rgb = np.zeros((temp.shape[0], temp.shape[1], 3), dtype=np.float32)
         rgb[:, :, 0] = r
         rgb[:, :, 1] = g
         rgb[:, :, 2] = b
