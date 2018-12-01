@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 import time
-
+import os
 import math
 from torch.utils import model_zoo
 import torch
@@ -272,6 +272,14 @@ class DRN(nn.Module):
         #     self.avgpool = nn.AvgPool2d(pool_size)
         #     self.fc = nn.Conv2d(self.out_dim, num_classes, kernel_size=1, stride=1, padding=0, bias=True)
 
+        self.layer10 = self._make_pred_layer(ASPP_Classifier_Module, [6, 12, 18, 24], [6, 12, 18, 24], n_classes, in_channels=512*block.expansion)
+        if self.layer10 is not None:
+            self.out_dim = n_classes
+            pass
+        else:
+            self.out_dim = 512 * block.expansion
+            pass
+
         # 网络模块权重和偏置初始化
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -317,8 +325,11 @@ class DRN(nn.Module):
             self.inplanes = channels
         return nn.Sequential(*modules)
 
+    def _make_pred_layer(self, block, dilation_series, padding_series, n_classes, in_channels):
+        return block(dilation_series, padding_series, n_classes, in_channels)
+
     def forward(self, x):
-        y = list()
+        # y = list()
 
         if self.arch == 'C':
             x = self.conv1(x)
@@ -328,35 +339,40 @@ class DRN(nn.Module):
             x = self.layer0(x)
 
         x = self.layer1(x)
-        y.append(x)
+        # y.append(x)
         x = self.layer2(x)
-        y.append(x)
+        # y.append(x)
 
         x = self.layer3(x)
-        y.append(x)
+        # y.append(x)
 
         x = self.layer4(x)
-        y.append(x)
+        # y.append(x)
 
         x = self.layer5(x)
-        y.append(x)
+        # y.append(x)
 
         if self.layer6 is not None:
             x = self.layer6(x)
-            y.append(x)
+            # y.append(x)
 
         if self.layer7 is not None:
             x = self.layer7(x)
-            y.append(x)
+            # y.append(x)
 
         if self.layer8 is not None:
             x = self.layer8(x)
-            y.append(x)
+            # y.append(x)
 
         # DRN E
         if self.layer9 is not None:
             x = self.layer9(x)
-            y.append(x)
+            # y.append(x)
+
+        # ASPP
+        if self.layer10 is not None:
+            x = self.layer10(x)
+            # y.append(x)
 
         # if self.out_map:
         #     x = self.fc(x)
@@ -529,8 +545,17 @@ def drn_d_24(pretrained=False, **kwargs):
 
 def drn_d_38(pretrained=False, **kwargs):
     model = DRN(BasicBlock, [1, 1, 3, 4, 6, 3, 1, 1], arch='D', **kwargs)
-    # if pretrained:
-    #     model.load_state_dict(model_zoo.load_url(model_urls['drn-d-38']))
+    if pretrained:
+        model_checkpoint_path = os.path.expanduser('~/.torch/models/drn_d_38-eebb45f0.pth')
+        if os.path.exists(model_checkpoint_path):
+            model_dict = model.state_dict()
+            pretrained_dict = torch.load(model_checkpoint_path, map_location='cpu')
+            # print('model_dict:', model_dict.keys())
+            # print('pretrained_dict:', pretrained_dict.keys())
+            new_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict.keys()}
+            # print('new_dict:', new_dict.keys())
+            model_dict.update(new_dict)
+            model.load_state_dict(model_dict)
     return model
 
 

@@ -45,7 +45,7 @@ def validate(args):
     if args.dataset == 'CamVid':
         dst = camvidLoader(local_path, is_transform=True, split=args.dataset_type)
     elif args.dataset == 'CityScapes':
-        dst = cityscapesLoader(local_path, is_transform=True)
+        dst = cityscapesLoader(local_path, is_transform=True, split=args.dataset_type)
     else:
         pass
     val_loader = torch.utils.data.DataLoader(dst, batch_size=1, shuffle=False)
@@ -71,8 +71,8 @@ def validate(args):
     gts, preds, errors, imgs_name = [], [], [], []
     for i, (imgs, labels) in enumerate(val_loader):
         print(i)
-        # if i==5:
-        #     break
+        if i==1:
+            break
         img_path = dst.files[args.dataset_type][i]
         img_name = img_path[img_path.rfind('/')+1:]
         imgs_name.append(img_name)

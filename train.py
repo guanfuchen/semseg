@@ -16,7 +16,7 @@ from semseg.loss import cross_entropy2d
 from semseg.metrics import scores
 from semseg.modelloader.EDANet import EDANet
 from semseg.modelloader.deeplabv3 import Res_Deeplab_101, Res_Deeplab_50
-from semseg.modelloader.drn import drn_d_22, DRNSeg, drn_a_asymmetric_18, drn_a_asymmetric_ibn_a_18, drnseg_a_50, drnseg_a_18, drnseg_e_22, drnseg_a_asymmetric_18, drnseg_a_asymmetric_ibn_a_18, drnseg_d_22
+from semseg.modelloader.drn import drn_d_22, DRNSeg, drn_a_asymmetric_18, drn_a_asymmetric_ibn_a_18, drnseg_a_50, drnseg_a_18, drnseg_e_22, drnseg_a_asymmetric_18, drnseg_a_asymmetric_ibn_a_18, drnseg_d_22, drnseg_d_38
 from semseg.modelloader.duc_hdc import ResNetDUC, ResNetDUCHDC
 from semseg.modelloader.enet import ENet
 from semseg.modelloader.enetv2 import ENetV2
@@ -304,7 +304,7 @@ if __name__=='__main__':
     parser.add_argument('--n_classes', type=int, default=12, help='train class num [ 12 ]')
     parser.add_argument('--lr', type=float, default=1e-4, help='train learning rate [ 0.00001 ]')
     parser.add_argument('--lr_policy', type=str, default='Polynomial', help='train learning policy [ Constant Polynomial ]')
-    parser.add_argument('--vis', type=bool, default=True, help='visualize the training results [ False ]')
+    parser.add_argument('--vis', type=bool, default=False, help='visualize the training results [ False ]')
     parser.add_argument('--cuda', type=bool, default=False, help='use cuda [ False ]')
     args = parser.parse_args()
     print(args)
