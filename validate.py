@@ -16,8 +16,7 @@ from semseg.loss import cross_entropy2d
 from semseg.metrics import scores
 from semseg.modelloader.EDANet import EDANet
 from semseg.modelloader.deeplabv3 import Res_Deeplab_101, Res_Deeplab_50
-from semseg.modelloader.drn import drn_d_22, DRNSeg, drn_a_asymmetric_18, drnseg_a_50, drnseg_a_18, drnseg_e_22, \
-    drnseg_a_asymmetric_18, drnseg_d_22
+from semseg.modelloader.drn import drn_d_22, DRNSeg, drn_a_asymmetric_18, drn_a_asymmetric_ibn_a_18, drnseg_a_50, drnseg_a_18, drnseg_e_22, drnseg_a_asymmetric_18, drnseg_a_asymmetric_ibn_a_18, drnseg_d_22, drnseg_d_38
 from semseg.modelloader.duc_hdc import ResNetDUC, ResNetDUCHDC
 from semseg.modelloader.enet import ENet
 from semseg.modelloader.enetv2 import ENetV2
@@ -66,13 +65,15 @@ def validate(args):
                 print('missing key')
     if args.cuda:
         model.cuda()
+    # some model load different mode different performance
     model.eval()
+    # model.train()
 
     gts, preds, errors, imgs_name = [], [], [], []
     for i, (imgs, labels) in enumerate(val_loader):
         print(i)
-        if i==1:
-            break
+        # if i==1:
+        #     break
         img_path = dst.files[args.dataset_type][i]
         img_name = img_path[img_path.rfind('/')+1:]
         imgs_name.append(img_name)
@@ -108,13 +109,13 @@ def validate(args):
             label_color = dst.decode_segmap(labels.cpu().data.numpy()[0]).transpose(2, 0, 1)
             pred_label_color = dst.decode_segmap(pred_labels[0]).transpose(2, 0, 1)
 
-            # label_color_cv2 = label_color.transpose(1, 2, 0)
-            # label_color_cv2 = cv2.cvtColor(label_color_cv2, cv2.COLOR_RGB2BGR)
-            # cv2.imwrite('/tmp/'+init_time+'/{}'.format(img_name), label_color_cv2)
+            label_color_cv2 = label_color.transpose(1, 2, 0)
+            label_color_cv2 = cv2.cvtColor(label_color_cv2, cv2.COLOR_RGB2BGR)
+            cv2.imwrite('/tmp/'+init_time+'/gt_{}'.format(img_name), label_color_cv2)
 
             pred_label_color_cv2 = pred_label_color.transpose(1, 2, 0)
             pred_label_color_cv2 = cv2.cvtColor(pred_label_color_cv2, cv2.COLOR_RGB2BGR)
-            cv2.imwrite('/tmp/'+init_time+'/{}'.format(img_name), pred_label_color_cv2)
+            cv2.imwrite('/tmp/'+init_time+'/pred_{}'.format(img_name), pred_label_color_cv2)
 
         for gt_, pred_ in zip(gt, pred):
             gts.append(gt_)
@@ -126,11 +127,11 @@ def validate(args):
     errors_indices = np.argsort(errors).tolist()
     # print('errors_indices:', errors_indices)
     # for top_i in range(len(errors_indices)):
-    for top_i in range(10):
-        top_index = errors_indices.index(top_i)
-        # print('top_index:', top_index)
-        img_name_top = imgs_name[top_index]
-        print('img_name_top:', img_name_top)
+    # for top_i in range(10):
+    #     top_index = errors_indices.index(top_i)
+    #     # print('top_index:', top_index)
+    #     img_name_top = imgs_name[top_index]
+    #     print('img_name_top:', img_name_top)
 
     score, class_iou = scores(gts, preds, n_class=dst.n_classes)
     for k, v in score.items():

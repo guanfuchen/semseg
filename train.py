@@ -17,6 +17,8 @@ from semseg.metrics import scores
 from semseg.modelloader.EDANet import EDANet
 from semseg.modelloader.deeplabv3 import Res_Deeplab_101, Res_Deeplab_50
 from semseg.modelloader.drn import drn_d_22, DRNSeg, drn_a_asymmetric_18, drn_a_asymmetric_ibn_a_18, drnseg_a_50, drnseg_a_18, drnseg_e_22, drnseg_a_asymmetric_18, drnseg_a_asymmetric_ibn_a_18, drnseg_d_22, drnseg_d_38
+from semseg.modelloader.drn_a_irb import drnsegirb_a_18
+from semseg.modelloader.drn_a_refine import drnsegrefine_a_18
 from semseg.modelloader.duc_hdc import ResNetDUC, ResNetDUCHDC
 from semseg.modelloader.enet import ENet
 from semseg.modelloader.enetv2 import ENetV2
@@ -116,6 +118,7 @@ def train(args):
         start_epoch_id2 = args.resume_model.rfind('.')
         start_epoch = int(args.resume_model[start_epoch_id1+1:start_epoch_id2])
     else:
+        # model = eval(args.structure)(n_classes=args.n_classes, pretrained=args.init_vgg16)
         try:
             model = eval(args.structure)(n_classes=args.n_classes, pretrained=args.init_vgg16)
         except:
@@ -166,11 +169,14 @@ def train(args):
     data_count = int(train_dst.__len__() * 1.0 / args.batch_size)
     print('data_count:', data_count)
     # iteration_step = 0
+    train_gts, train_preds = [], []
     for epoch in range(start_epoch+1, args.training_epoch, 1):
         loss_epoch = 0
         scheduler.step()
 
         for i, (imgs, labels) in enumerate(train_loader):
+            # if i==1:
+            #     break
             model.train()
 
             # 最后的几张图片可能不到batch_size的数量，比如batch_size=4，可能只剩3张
@@ -200,6 +206,15 @@ def train(args):
             loss.backward()
 
             optimizer.step()
+
+            # ------------------train metris-------------------------------
+            train_pred = outputs.cpu().data.max(1)[1].numpy()
+            train_gt = labels.cpu().data.numpy()
+
+            for train_gt_, train_pred_ in zip(train_gt, train_pred):
+                train_gts.append(train_gt_)
+                train_preds.append(train_pred_)
+            # ------------------train metris-------------------------------
 
             if args.vis and i%50==0:
                 pred_labels = outputs.cpu().data.max(1)[1].numpy()
@@ -277,6 +292,26 @@ def train(args):
             win_res = vis.line(X=np.ones(1)*epoch, Y=lr_epoch_expand, win=win, update='append')
             if win_res != win:
                 vis.line(X=np.ones(1)*epoch, Y=lr_epoch_expand, win=win, opts=dict(title=win, xlabel='epoch', ylabel='lr'))
+
+        # ------------------train metris-------------------------------
+        if args.vis:
+            score, class_iou = scores(train_gts, train_preds, n_class=args.n_classes)
+            for k, v in score.items():
+                print(k, v)
+                if k == 'Overall Acc : \t':
+                    # 显示校准周期的mIoU
+                    overall_acc = v
+                    if args.vis:
+                        win = 'acc_epoch'
+                        overall_acc_expand = np.expand_dims(overall_acc, axis=0)
+                        win_res = vis.line(X=np.ones(1) * epoch, Y=overall_acc_expand, win=win,
+                                           update='append')
+                        if win_res != win:
+                            vis.line(X=np.ones(1) * epoch, Y=overall_acc_expand, win=win,
+                                     opts=dict(title=win, xlabel='epoch', ylabel='accuracy'))
+            # clear for new training metrics
+            train_gts, train_preds = [], []
+        # ------------------train metris-------------------------------
 
         if args.save_model and epoch%args.save_epoch==0:
             torch.save(model.state_dict(), '{}_{}_class_{}_{}.pt'.format(args.structure, args.dataset, args.n_classes, epoch))

@@ -272,7 +272,8 @@ class DRN(nn.Module):
         #     self.avgpool = nn.AvgPool2d(pool_size)
         #     self.fc = nn.Conv2d(self.out_dim, num_classes, kernel_size=1, stride=1, padding=0, bias=True)
 
-        self.layer10 = self._make_pred_layer(ASPP_Classifier_Module, [6, 12, 18, 24], [6, 12, 18, 24], n_classes, in_channels=512*block.expansion)
+        self.layer10 = None
+        # self.layer10 = self._make_pred_layer(ASPP_Classifier_Module, [6, 12, 18, 24], [6, 12, 18, 24], n_classes, in_channels=512*block.expansion)
         if self.layer10 is not None:
             self.out_dim = n_classes
             pass
@@ -445,6 +446,7 @@ class DRN_A(nn.Module):
         layers.append(block(self.inplanes, planes, stride, downsample))
         self.inplanes = planes * block.expansion
         for i in range(1, blocks):
+            # print('blocks_i:', i)
             layers.append(block(self.inplanes, planes,
                                 dilation=(dilation, dilation)))
 
@@ -485,10 +487,21 @@ def drn_a_18(pretrained=False, **kwargs):
     #     model.load_state_dict(model_zoo.load_url('https://s3.amazonaws.com/pytorch/models/resnet18-5c106cde.pth'))
     return model
 
+def drn_a_n(pretrained=False, depth_n=18, **kwargs):
+    model = DRN_A(BasicBlock, [2+depth_n-18, 2, 2, 2], **kwargs)
+    # if pretrained:
+    #     model.load_state_dict(model_zoo.load_url('https://s3.amazonaws.com/pytorch/models/resnet18-5c106cde.pth'))
+    return model
+
 def drn_a_asymmetric_18(pretrained=False, **kwargs):
     model = DRN_A(BasicBlock_asymmetric, [2, 2, 2, 2], **kwargs)
     # if pretrained:
     #     model.load_state_dict(model_zoo.load_url('https://s3.amazonaws.com/pytorch/models/resnet18-5c106cde.pth'))
+    return model
+
+def drn_a_asymmetric_n(pretrained=False, depth_n=18, **kwargs):
+    # print('depth_n:', depth_n)
+    model = DRN_A(BasicBlock_asymmetric, [2+depth_n-18, 2, 2, 2], **kwargs)
     return model
 
 def drn_a_asymmetric_ibn_a_18(pretrained=False, **kwargs):
@@ -610,8 +623,19 @@ def drnseg_a_18(pretrained=False, n_classes=21):
     model = DRNSeg(model_name='drn_a_18', n_classes=n_classes, pretrained=pretrained)
     return model
 
+def drnseg_a_n(pretrained=False, n_classes=21, depth_n=18):
+    print('depth_n:', depth_n)
+    model = DRNSeg(model_name='drn_a_n', n_classes=n_classes, pretrained=pretrained, depth_n=depth_n)
+    return model
+
 def drnseg_a_asymmetric_18(pretrained=False, n_classes=21):
     model = DRNSeg(model_name='drn_a_asymmetric_18', n_classes=n_classes, pretrained=pretrained)
+    return model
+
+# drnseg模型n测试
+def drnseg_a_asymmetric_n(pretrained=False, n_classes=21, depth_n=18):
+    print('depth_n:', depth_n)
+    model = DRNSeg(model_name='drn_a_asymmetric_n', n_classes=n_classes, pretrained=pretrained, depth_n=depth_n)
     return model
 
 def drnseg_a_asymmetric_ibn_a_18(pretrained=False, n_classes=21):
@@ -690,7 +714,7 @@ def fill_up_weights(up):
 
 # drn segnet network
 class DRNSeg(nn.Module):
-    def __init__(self, model_name, n_classes, pretrained=False, use_torch_up=False):
+    def __init__(self, model_name, n_classes, pretrained=False, use_torch_up=False, depth_n=-1):
         super(DRNSeg, self).__init__()
         # DRN分割模型不同变种
         # if model_name=='drn_d_22':
@@ -701,7 +725,15 @@ class DRNSeg(nn.Module):
         #     model = drn_a_18(pretrained=pretrained, num_classes=1000)
         # if model_name=='drn_e_22':
         #     model = drn_e_22(pretrained=pretrained, num_classes=1000)
-        model = eval(model_name)(pretrained=pretrained, n_classes=n_classes)
+
+        if model_name=='drn_a_asymmetric_n':
+            # print('depth_n:', depth_n)
+            model = drn_a_asymmetric_n(pretrained=pretrained, n_classes=n_classes, depth_n=depth_n)
+        elif model_name=='drn_a_n':
+            # print('depth_n:', depth_n)
+            model = drn_a_n(pretrained=pretrained, n_classes=n_classes, depth_n=depth_n)
+        else:
+            model = eval(model_name)(pretrained=pretrained, n_classes=n_classes)
         # pmodel = nn.DataParallel(model)
         # if pretrained_model is not None:
             # pmodel.load_state_dict(pretrained_model)
@@ -720,7 +752,7 @@ class DRNSeg(nn.Module):
         m.bias.data.zero_()
 
         if use_torch_up:
-            # 使用pytorch双向性上采样
+            # 使用pytorch双线性上采样
             self.up = nn.UpsamplingBilinear2d(scale_factor=8)
         else:
             # 使用转置卷积上采样
@@ -728,6 +760,35 @@ class DRNSeg(nn.Module):
             fill_up_weights(up)
             up.weight.requires_grad = False
             self.up = up
+
+        if pretrained and n_classes == 19 and model_name=='drn_d_38':
+            model_checkpoint_path = os.path.expanduser('~/.torch/models/drn_d_38_cityscapes.pth')
+            if os.path.exists(model_checkpoint_path):
+                model_dict = self.state_dict()
+                pretrained_dict = torch.load(model_checkpoint_path, map_location='cpu')
+                # print('model_dict:', model_dict.keys()[:3])
+                # print('pretrained_dict:', pretrained_dict.keys()[:3])
+                # print('len(model_dict):', len(model_dict.keys()))
+                # print('len(pretrained_dict):', len(pretrained_dict.keys()))
+                # new_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict.keys()}
+                new_dict = {}
+                for k, v in pretrained_dict.items():
+                    if k.find('base.') != -1:
+                        new_k = str('base.' + 'layer' + k[k.find('.') + 1:])
+                        if new_k not in model_dict.keys():
+                            print(new_k)
+                        new_v = v
+                        new_dict[new_k] = new_v
+                    else:
+                        # print(k)
+                        new_k = k
+                        new_v = v
+                        new_dict[new_k] = new_v
+                # print('new_dict:', new_dict.keys()[:3])
+                # print('len(new_dict):', len(new_dict.keys()))
+                model_dict.update(new_dict)
+                self.load_state_dict(model_dict)
+
 
     def forward(self, x):
         x = self.base(x)
