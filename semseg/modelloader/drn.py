@@ -714,7 +714,7 @@ def fill_up_weights(up):
 
 # drn segnet network
 class DRNSeg(nn.Module):
-    def __init__(self, model_name, n_classes, pretrained=False, use_torch_up=False, depth_n=-1):
+    def __init__(self, model_name, n_classes, pretrained=False, use_torch_up=True, depth_n=-1):
         super(DRNSeg, self).__init__()
         # DRN分割模型不同变种
         # if model_name=='drn_d_22':
@@ -788,7 +788,42 @@ class DRNSeg(nn.Module):
                 # print('len(new_dict):', len(new_dict.keys()))
                 model_dict.update(new_dict)
                 self.load_state_dict(model_dict)
-
+        if pretrained and model_name=='drn_a_18':
+            model_checkpoint_path = os.path.expanduser('~/GitHub/Quick/semseg/best.pth')
+            if os.path.exists(model_checkpoint_path):
+                model_dict = self.state_dict()
+                pretrained_dict = torch.load(model_checkpoint_path, map_location='cpu')
+                model_dict_keys = model_dict.keys()
+                # print('model_dict:', model_dict.keys()[:3])
+                # print('pretrained_dict:', pretrained_dict.keys()[:3])
+                # print('len(model_dict):', len(model_dict.keys()))
+                # print('len(pretrained_dict):', len(pretrained_dict.keys()))
+                new_dict = {}
+                for k, v in pretrained_dict.items():
+                    if 'base.{}'.format(k) in model_dict_keys:
+                        new_k = 'base.{}'.format(k)
+                        new_v = v
+                        new_dict[new_k] = new_v
+                    else:
+                        pass
+                        # print(k)
+                    # if k.find('base.') != -1:
+                    #     new_k = str('base.' + 'layer' + k[k.find('.') + 1:])
+                    #     if new_k not in model_dict.keys():
+                    #         print(new_k)
+                    #     new_v = v
+                    #     new_dict[new_k] = new_v
+                    # else:
+                    #     # print(k)
+                    #     new_k = k
+                    #     new_v = v
+                    #     new_dict[new_k] = new_v
+                # print('new_dict:', new_dict.keys()[:3])
+                new_dict = {k: v for k, v in new_dict.items() if k in model_dict.keys()}
+                # print('new_dict:', new_dict.keys())
+                # print('len(new_dict):', len(new_dict.keys()))
+                model_dict.update(new_dict)
+                self.load_state_dict(model_dict)
 
     def forward(self, x):
         x = self.base(x)
