@@ -61,33 +61,6 @@ class camvidLoader(data.Dataset):
         img = np.array(img, dtype=np.uint8)
         lbl = np.array(lbl, dtype=np.int32)
 
-        # bbox_path = self.root + '/' + self.split + 'bbox/' + img_file_name + '.xml'
-        # object_det_bboxes = []
-        # import xml.etree.ElementTree as ET
-        # if os.path.exists(bbox_path):
-        #     print(bbox_path)
-        #     bbox_tree = ET.parse(bbox_path)
-        #     bbox_root = bbox_tree.getroot()
-        #
-        #     for bbox_obj in bbox_root.findall('object'):
-        #         bbox_obj_name = bbox_obj.find('name').text
-        #         if bbox_obj_name not in ['Car']:
-        #             continue
-        #         bbox_obj_bndbox = bbox_obj.find('bndbox')
-        #         xmin = int(bbox_obj_bndbox.find('xmin').text)
-        #         ymin = int(bbox_obj_bndbox.find('ymin').text)
-        #         xmax = int(bbox_obj_bndbox.find('xmax').text)
-        #         ymax = int(bbox_obj_bndbox.find('ymax').text)
-        #         print bbox_obj_name, xmin, ymin, xmax, ymax
-        #         object_det_bboxes.append([xmin, ymin, xmax, ymax, 0])
-        #
-        # for object_det_bbox in object_det_bboxes:
-        #     xmin = object_det_bbox[0]
-        #     ymin = object_det_bbox[1]
-        #     xmax = object_det_bbox[2]
-        #     ymax = object_det_bbox[3]
-        #     cv2.rectangle(img, pt1=(xmin, ymin), pt2=(xmax, ymax), color=(255, 0, 0), thickness=5)
-
         if self.is_transform:
             img, lbl = self.transform(img, lbl)
 

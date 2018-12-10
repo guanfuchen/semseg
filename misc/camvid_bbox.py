@@ -17,14 +17,13 @@ if __name__ == '__main__':
     file_list.sort()
     print(file_list)
 
-
     bbox_width = 960
     bbox_height = 720
     img_width = 480
     img_height = 360
 
     all_bbox_obj_name = []
-    right_obj_names = ['Car', 'Pedestrian', 'SUVPickupTruck']
+    right_obj_names = ['Car', 'Pedestrian']
     save_obj_fp = open('/tmp/camvid_det.txt', 'wb')
     for img_name in file_list:
         object_det_bboxes = []
