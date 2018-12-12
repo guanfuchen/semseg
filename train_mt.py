@@ -171,7 +171,7 @@ def train(args):
         scheduler.step()
 
         # ----for object detection----
-        for det_i, (det_imgs, det_labels) in enumerate(det_train_loader):
+        for det_i, (det_imgs, det_labels, _) in enumerate(det_train_loader):
             model.train()
             # print('det_imgs.shape:', det_imgs.shape)
             # print('det_labels.shape:', det_labels.shape)
@@ -187,6 +187,7 @@ def train(args):
             # print('outpust_det:', outputs_det.shape)
 
             det_loss = det_criterion(outputs_det, det_labels)
+            det_loss = 0.02 * det_loss # for balance with segment and detection
             det_loss_np = det_loss.cpu().data.numpy()
             optimizer.zero_grad()
             det_loss.backward()

@@ -57,7 +57,8 @@ class yoloDataset(data.Dataset):
 
     def __getitem__(self, idx):
         fname = self.fnames[idx]
-        img = cv2.imread(os.path.join(self.root + fname))
+        img_ori = cv2.imread(os.path.join(self.root + fname))
+        img = img_ori
         boxes = self.boxes[idx].clone()
         labels = self.labels[idx].clone()
 
@@ -93,7 +94,7 @@ class yoloDataset(data.Dataset):
             img = t(img)
 
         # img /= 255.0
-        return img, target
+        return img, target, img_ori
 
     def __len__(self):
         return self.num_samples
