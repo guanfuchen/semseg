@@ -12,6 +12,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau, StepLR
 
 from semseg.dataloader.camvid_loader import camvidLoader
 from semseg.dataloader.cityscapes_loader import cityscapesLoader
+from semseg.dataloader.freespace_loader import freespaceLoader
 from semseg.loss import cross_entropy2d
 from semseg.metrics import scores
 from semseg.modelloader.EDANet import EDANet
@@ -95,10 +96,12 @@ def train(args):
         elif args.class_weighting=='ENET':
             class_weight = ENet_weighing(trainannot_image_files, num_classes=12)
             class_weight = torch.tensor(class_weight)
-
     elif args.dataset == 'CityScapes':
         train_dst = cityscapesLoader(local_path, is_transform=True, split='train')
         val_dst = cityscapesLoader(local_path, is_transform=True, split='val')
+    elif args.dataset == 'FreeSpace':
+        train_dst = freespaceLoader(local_path, is_transform=True, split='train')
+        val_dst = freespaceLoader(local_path, is_transform=True, split='val')
     else:
         print('{} dataset does not implement'.format(args.dataset))
         exit(0)
@@ -331,8 +334,8 @@ if __name__=='__main__':
     parser.add_argument('--save_epoch', type=int, default=1, help='save model after epoch [ 1 ]')
     parser.add_argument('--training_epoch', type=int, default=500, help='training epoch end training model [ 30000 ]')
     parser.add_argument('--init_vgg16', type=bool, default=False, help='init model using vgg16 weights [ False ]')
-    parser.add_argument('--dataset', type=str, default='CamVid', help='train dataset [ CamVid CityScapes ]')
-    parser.add_argument('--dataset_path', type=str, default='~/Data/CamVid', help='train dataset path [ ~/Data/CamVid ~/Data/cityscapes ]')
+    parser.add_argument('--dataset', type=str, default='CamVid', help='train dataset [ CamVid CityScapes FreeSpace ]')
+    parser.add_argument('--dataset_path', type=str, default='~/Data/CamVid', help='train dataset path [ ~/Data/CamVid ~/Data/cityscapes ~/Data/FreeSpaceDataset ]')
     parser.add_argument('--data_augment', type=bool, default=True, help='enlarge the training data [ True False ]')
     parser.add_argument('--class_weighting', type=str, default='MFB', help='weighting class [ MFB ENET ]')
     parser.add_argument('--batch_size', type=int, default=1, help='train dataset batch size [ 1 ]')
