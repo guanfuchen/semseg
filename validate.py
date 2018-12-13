@@ -82,8 +82,8 @@ def validate(args):
         #  print(labels.shape)
         #  print(imgs.shape)
         # 将np变量转换为pytorch中的变量
-        imgs = Variable(imgs)
-        labels = Variable(labels)
+        imgs = Variable(imgs, volatile=True)
+        labels = Variable(labels, volatile=True)
 
         if args.cuda:
             imgs = imgs.cuda()

@@ -16,6 +16,7 @@ from semseg.dataloader.freespace_loader import freespaceLoader
 from semseg.loss import cross_entropy2d
 from semseg.metrics import scores
 from semseg.modelloader.EDANet import EDANet
+from semseg.modelloader.bisenet import BiSeNet
 from semseg.modelloader.deeplabv3 import Res_Deeplab_101, Res_Deeplab_50
 from semseg.modelloader.drn import drn_d_22, DRNSeg, drn_a_asymmetric_18, drn_a_asymmetric_ibn_a_18, drnseg_a_50, drnseg_a_18, drnseg_e_22, drnseg_a_asymmetric_18, drnseg_a_asymmetric_ibn_a_18, drnseg_d_22, drnseg_d_38
 from semseg.modelloader.drn_a_irb import drnsegirb_a_18
@@ -245,8 +246,8 @@ def train(args):
             val_gts, val_preds = [], []
             for val_i, (val_imgs, val_labels) in enumerate(val_loader):
                 # print(val_i)
-                val_imgs = Variable(val_imgs)
-                val_labels = Variable(val_labels)
+                val_imgs = Variable(val_imgs, volatile=True)
+                val_labels = Variable(val_labels, volatile=True)
 
                 if args.cuda:
                     val_imgs = val_imgs.cuda()
