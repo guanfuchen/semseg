@@ -18,7 +18,7 @@ from semseg.metrics import scores
 from semseg.modelloader.EDANet import EDANet
 from semseg.modelloader.bisenet import BiSeNet
 from semseg.modelloader.deeplabv3 import Res_Deeplab_101, Res_Deeplab_50
-from semseg.modelloader.drn import drn_d_22, DRNSeg, drn_a_asymmetric_18, drn_a_asymmetric_ibn_a_18, drnseg_a_50, drnseg_a_18, drnseg_e_22, drnseg_a_asymmetric_18, drnseg_a_asymmetric_ibn_a_18, drnseg_d_22, drnseg_d_38
+from semseg.modelloader.drn import drn_d_22, DRNSeg, drn_a_asymmetric_18, drn_a_asymmetric_ibn_a_18, drnseg_a_50, drnseg_a_18, drnseg_a_34, drnseg_e_22, drnseg_a_asymmetric_18, drnseg_a_asymmetric_ibn_a_18, drnseg_d_22, drnseg_d_38
 from semseg.modelloader.drn_a_irb import drnsegirb_a_18
 from semseg.modelloader.drn_a_refine import drnsegrefine_a_18
 from semseg.modelloader.duc_hdc import ResNetDUC, ResNetDUCHDC
@@ -328,7 +328,7 @@ if __name__=='__main__':
     # print('train----in----')
     parser = argparse.ArgumentParser(description='training parameter setting')
     parser.add_argument('--structure', type=str, default='ENetV2', help='use the net structure to segment [ fcn_32s ResNetDUC segnet ENet drn_d_22 ]')
-    parser.add_argument('--solver', type=str, default='SGD', help='use the solver to optimizer net [ SGD ]')
+    parser.add_argument('--solver', type=str, default='Adam', help='use the solver to optimizer net [ SGD Adam RMSprop ]')
     parser.add_argument('--resume_model', type=str, default='', help='resume model path [ fcn32s_camvid_9.pkl ]')
     parser.add_argument('--resume_model_state_dict', type=str, default='', help='resume model state dict path [ fcn32s_camvid_9.pt ]')
     parser.add_argument('--save_model', type=bool, default=False, help='save model [ False ]')

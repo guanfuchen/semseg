@@ -657,3 +657,27 @@ class IBN(nn.Module):
         out2 = self.BN(split[1].contiguous())
         out = torch.cat((out1, out2), 1)
         return out
+
+class conv2DGroupNormRelu(nn.Module):
+    def __init__(self, in_channels, n_filters, kernel_size, stride, padding, bias=True, dilation=1, n_groups=16):
+        super(conv2DGroupNormRelu, self).__init__()
+
+        conv_mod = nn.Conv2d(int(in_channels), int(n_filters), kernel_size=kernel_size, padding=padding, stride=stride, bias=bias, dilation=dilation)
+
+        self.cgr_unit = nn.Sequential(conv_mod, nn.GroupNorm(n_groups, int(n_filters)), nn.ReLU(inplace=True))
+
+    def forward(self, inputs):
+        outputs = self.cgr_unit(inputs)
+        return outputs
+
+class conv2DGroupNorm(nn.Module):
+    def __init__(self, in_channels, n_filters, kernel_size, stride, padding, bias=True, dilation=1, n_groups=16):
+        super(conv2DGroupNorm, self).__init__()
+
+        conv_mod = nn.Conv2d(int(in_channels), int(n_filters), kernel_size=kernel_size, padding=padding, stride=stride, bias=bias, dilation=dilation)
+
+        self.cgr_unit = nn.Sequential(conv_mod, nn.GroupNorm(n_groups, int(n_filters)))
+
+    def forward(self, inputs):
+        outputs = self.cgr_unit(inputs)
+        return outputs

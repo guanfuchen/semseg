@@ -17,8 +17,13 @@
 - PSPNet，参考[pspnet_understanding](doc/pspnet_understanding.md)
 - ENet，已实现
 - ErfNet，已实现
+- EDANet，已实现
 - LinkNet，已实现，参考[pytorch-linknet](https://github.com/e-lab/pytorch-linknet)
 - FC-DenseNet，已实现，参考[fcdensenet_understanding](doc/fcdensenet_understanding.md)
+- LRN，已实现，但是没有增加多分辨率loss训练，后期增加。
+- BiSeNet，已实现，主要是ResNet-18和ResNet-101，其余类似。
+- FRRN，已实现，FRRN A和FRRN B。
+- 增加YOLO-V1多任务学习，还未完全测试。
 - ...
 - 
 ---

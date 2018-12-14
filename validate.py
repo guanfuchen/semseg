@@ -12,6 +12,7 @@ from scipy import misc
 
 from semseg.dataloader.camvid_loader import camvidLoader
 from semseg.dataloader.cityscapes_loader import cityscapesLoader
+from semseg.dataloader.freespace_loader import freespaceLoader
 from semseg.loss import cross_entropy2d
 from semseg.metrics import scores
 from semseg.modelloader.EDANet import EDANet
@@ -45,6 +46,8 @@ def validate(args):
         dst = camvidLoader(local_path, is_transform=True, split=args.dataset_type)
     elif args.dataset == 'CityScapes':
         dst = cityscapesLoader(local_path, is_transform=True, split=args.dataset_type)
+    elif args.dataset == 'FreeSpace':
+        dst = freespaceLoader(local_path, is_transform=True, split=args.dataset_type)
     else:
         pass
     val_loader = torch.utils.data.DataLoader(dst, batch_size=1, shuffle=False)
@@ -149,8 +152,8 @@ if __name__=='__main__':
     parser.add_argument('--validate_model', type=str, default='', help='validate model path [ fcn32s_camvid_9.pkl ]')
     parser.add_argument('--validate_model_state_dict', type=str, default='', help='validate model state dict path [ fcn32s_camvid_9.pt ]')
     parser.add_argument('--init_vgg16', type=bool, default=False, help='init model using vgg16 weights [ False ]')
-    parser.add_argument('--dataset', type=str, default='CamVid', help='train dataset [ CamVid CityScapes ]')
-    parser.add_argument('--dataset_path', type=str, default='~/Data/CamVid', help='train dataset path [ ~/Data/CamVid ~/Data/cityscapes ]')
+    parser.add_argument('--dataset', type=str, default='CamVid', help='train dataset [ CamVid CityScapes FreeSpace ]')
+    parser.add_argument('--dataset_path', type=str, default='~/Data/CamVid', help='train dataset path [ ~/Data/CamVid ~/Data/cityscapes ~/Data/FreeSpaceDataset ]')
     parser.add_argument('--dataset_type', type=str, default='val', help='dataset type [ train val test ]')
     parser.add_argument('--n_classes', type=int, default=12, help='train class num [ 12 ]')
     parser.add_argument('--vis', type=bool, default=False, help='visualize the training results [ False ]')
