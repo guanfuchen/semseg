@@ -179,6 +179,7 @@ def train(args):
         loss_epoch = 0
         scheduler.step()
 
+        optimizer.zero_grad() # when train next time zero all grad, just acc the grad when the epoch training
         for i, (imgs, labels) in enumerate(train_loader):
             # if i==1:
             #     break
@@ -199,18 +200,23 @@ def train(args):
             outputs = model(imgs)
             # print('outputs.shape:', outputs.shape)
 
-            # 一次backward后如果不清零，梯度是累加的
-            optimizer.zero_grad()
-
             # print('outputs.size:', outputs.size())
             # print('labels.size:', labels.size())
 
             loss = cross_entropy2d(outputs, labels, weight=class_weight)
+
+            # add grad backward the avg loss
+            loss_grad_acc_avg = loss*1.0/args.grad_acc_steps
+            loss_grad_acc_avg.backward()
+
             loss_np = loss.cpu().data.numpy()
             loss_epoch += loss_np
-            loss.backward()
 
-            optimizer.step()
+
+            if (i+1)%args.grad_acc_steps == 0:
+                optimizer.step()
+                # 一次backward后如果不清零，梯度是累加的
+                optimizer.zero_grad()
 
             # ------------------train metris-------------------------------
             train_pred = outputs.cpu().data.max(1)[1].numpy()
@@ -329,6 +335,7 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser(description='training parameter setting')
     parser.add_argument('--structure', type=str, default='ENetV2', help='use the net structure to segment [ fcn_32s ResNetDUC segnet ENet drn_d_22 ]')
     parser.add_argument('--solver', type=str, default='Adam', help='use the solver to optimizer net [ SGD Adam RMSprop ]')
+    parser.add_argument('--grad_acc_steps', type=int, default=1, help='gpu memory not enough use grad accumulation act like large batch [ 1 ]')
     parser.add_argument('--resume_model', type=str, default='', help='resume model path [ fcn32s_camvid_9.pkl ]')
     parser.add_argument('--resume_model_state_dict', type=str, default='', help='resume model state dict path [ fcn32s_camvid_9.pt ]')
     parser.add_argument('--save_model', type=bool, default=False, help='save model [ False ]')

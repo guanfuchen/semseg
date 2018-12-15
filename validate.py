@@ -16,8 +16,11 @@ from semseg.dataloader.freespace_loader import freespaceLoader
 from semseg.loss import cross_entropy2d
 from semseg.metrics import scores
 from semseg.modelloader.EDANet import EDANet
+from semseg.modelloader.bisenet import BiSeNet
 from semseg.modelloader.deeplabv3 import Res_Deeplab_101, Res_Deeplab_50
-from semseg.modelloader.drn import drn_d_22, DRNSeg, drn_a_asymmetric_18, drn_a_asymmetric_ibn_a_18, drnseg_a_50, drnseg_a_18, drnseg_e_22, drnseg_a_asymmetric_18, drnseg_a_asymmetric_ibn_a_18, drnseg_d_22, drnseg_d_38
+from semseg.modelloader.drn import drn_d_22, DRNSeg, drn_a_asymmetric_18, drn_a_asymmetric_ibn_a_18, drnseg_a_50, drnseg_a_18, drnseg_a_34, drnseg_e_22, drnseg_a_asymmetric_18, drnseg_a_asymmetric_ibn_a_18, drnseg_d_22, drnseg_d_38
+from semseg.modelloader.drn_a_irb import drnsegirb_a_18
+from semseg.modelloader.drn_a_refine import drnsegrefine_a_18
 from semseg.modelloader.duc_hdc import ResNetDUC, ResNetDUCHDC
 from semseg.modelloader.enet import ENet
 from semseg.modelloader.enetv2 import ENetV2
@@ -27,6 +30,7 @@ from semseg.modelloader.fcn import fcn, fcn_32s, fcn_16s, fcn_8s
 from semseg.modelloader.fcn_mobilenet import fcn_MobileNet, fcn_MobileNet_32s, fcn_MobileNet_16s, fcn_MobileNet_8s
 from semseg.modelloader.fcn_resnet import fcn_resnet18, fcn_resnet34, fcn_resnet18_32s, fcn_resnet18_16s, \
     fcn_resnet18_8s, fcn_resnet34_32s, fcn_resnet34_16s, fcn_resnet34_8s, fcn_resnet50_32s, fcn_resnet50_16s, fcn_resnet50_8s
+from semseg.modelloader.lrn import lrn_vgg16
 from semseg.modelloader.segnet import segnet, segnet_squeeze, segnet_alignres, segnet_vgg19
 from semseg.modelloader.segnet_unet import segnet_unet
 from semseg.modelloader.sqnet import sqnet
@@ -140,8 +144,12 @@ def validate(args):
     for k, v in score.items():
         print(k, v)
 
+    class_iou_list = []
     for i in range(dst.n_classes):
-        print(i, class_iou[i])
+        class_iou_list.append(round(class_iou[i], 2))
+        # print(i, round(class_iou[i], 2))
+    print('classes:', range(dst.n_classes))
+    print('class_iou_list:', class_iou_list)
 
 
 # best validate: python validate.py --structure fcn32s --validate_model_state_dict fcn32s_camvid_9.pt

@@ -33,7 +33,7 @@ def scores(label_trues, label_preds, n_class):
     fwavacc = (freq[freq > 0] * iu[freq > 0]).sum()
     cls_iu = dict(zip(range(n_class), iu))
 
-    return {'Overall Acc : \t': acc,
-            'Mean Acc : \t': acc_cls,
-            'FreqW Acc : \t': fwavacc,
-            'Mean IoU : \t': mean_iu,}, cls_iu
+    return {'Overall Acc : \t': round(acc, 2),
+            'Mean Acc : \t': round(acc_cls, 2),
+            'FreqW Acc : \t': round(fwavacc, 2),
+            'Mean IoU : \t': round(mean_iu, 2),}, cls_iu
