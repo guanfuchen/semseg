@@ -8,7 +8,7 @@ import time
 import numpy as np
 import visdom
 from torch.autograd import Variable
-from torch.optim.lr_scheduler import ReduceLROnPlateau, StepLR
+from torch.optim.lr_scheduler import ReduceLROnPlateau, StepLR, MultiStepLR
 
 from semseg.dataloader.camvid_loader import camvidLoader
 from semseg.dataloader.cityscapes_loader import cityscapesLoader
@@ -30,6 +30,7 @@ from semseg.modelloader.fcn import fcn, fcn_32s, fcn_16s, fcn_8s
 from semseg.modelloader.fcn_mobilenet import fcn_MobileNet, fcn_MobileNet_32s, fcn_MobileNet_16s, fcn_MobileNet_8s
 from semseg.modelloader.fcn_resnet import fcn_resnet18, fcn_resnet34, fcn_resnet18_32s, fcn_resnet18_16s, \
     fcn_resnet18_8s, fcn_resnet34_32s, fcn_resnet34_16s, fcn_resnet34_8s, fcn_resnet50_32s, fcn_resnet50_16s, fcn_resnet50_8s
+from semseg.modelloader.fcn_shufflenet import fcn_shufflenet_32s, fcn_shufflenet_16s, fcn_shufflenet_8s
 from semseg.modelloader.lrn import lrn_vgg16
 from semseg.modelloader.segnet import segnet, segnet_squeeze, segnet_alignres, segnet_vgg19
 from semseg.modelloader.segnet_unet import segnet_unet
@@ -168,6 +169,8 @@ def train(args):
         scheduler = ConstantLR(optimizer)
     elif args.lr_policy == 'Polynomial':
         scheduler = PolynomialLR(optimizer, max_iter=args.training_epoch, power=0.9) # base lr=0.01 power=0.9 like PSPNet
+    elif args.lr_policy == 'MultiStep':
+        scheduler = MultiStepLR(optimizer, milestones=[10, 50, 90], gamma=0.1) # base lr=0.01 power=0.9 like PSPNet
 
     # scheduler = StepLR(optimizer, step_size=1, gamma=0.1)
 
@@ -350,7 +353,7 @@ if __name__=='__main__':
     parser.add_argument('--val_interval', type=int, default=-1, help='val dataset interval unit epoch [ 3 ]')
     parser.add_argument('--n_classes', type=int, default=12, help='train class num [ 12 ]')
     parser.add_argument('--lr', type=float, default=1e-4, help='train learning rate [ 0.00001 ]')
-    parser.add_argument('--lr_policy', type=str, default='Polynomial', help='train learning policy [ Constant Polynomial ]')
+    parser.add_argument('--lr_policy', type=str, default='Polynomial', help='train learning policy [ Constant Polynomial MultiStep ]')
     parser.add_argument('--vis', type=bool, default=False, help='visualize the training results [ False ]')
     parser.add_argument('--cuda', type=bool, default=False, help='use cuda [ False ]')
     args = parser.parse_args()
