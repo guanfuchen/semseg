@@ -390,11 +390,16 @@ class DRN(nn.Module):
 
 class DRN_A(nn.Module):
 
-    def __init__(self, block, layers, n_classes=21):
+    def __init__(self, block, layers, n_classes=21, input_channel=3):
         self.inplanes = 64
         super(DRN_A, self).__init__()
+        self.block = block
+        self.layers = layers
+        self.n_classes = n_classes
+        self.input_channel = input_channel
+
         self.out_dim = 512 * block.expansion
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        self.conv1 = nn.Conv2d(self.input_channel, 64, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
         for i in self.bn1.parameters():
             i.requires_grad = False
@@ -619,8 +624,8 @@ def drnseg_a_50(pretrained=False, n_classes=21):
     model = DRNSeg(model_name='drn_a_50', n_classes=n_classes, pretrained=pretrained)
     return model
 
-def drnseg_a_18(pretrained=False, n_classes=21):
-    model = DRNSeg(model_name='drn_a_18', n_classes=n_classes, pretrained=pretrained)
+def drnseg_a_18(pretrained=False, n_classes=21, input_channel=3):
+    model = DRNSeg(model_name='drn_a_18', n_classes=n_classes, pretrained=pretrained, input_channel=input_channel)
     return model
 
 def drnseg_a_n(pretrained=False, n_classes=21, depth_n=18):
@@ -714,7 +719,7 @@ def fill_up_weights(up):
 
 # drn segnet network
 class DRNSeg(nn.Module):
-    def __init__(self, model_name, n_classes, pretrained=False, use_torch_up=True, depth_n=-1):
+    def __init__(self, model_name, n_classes, pretrained=False, use_torch_up=True, depth_n=-1, input_channel=3):
         super(DRNSeg, self).__init__()
         # DRN分割模型不同变种
         # if model_name=='drn_d_22':
@@ -728,12 +733,12 @@ class DRNSeg(nn.Module):
 
         if model_name=='drn_a_asymmetric_n':
             # print('depth_n:', depth_n)
-            model = drn_a_asymmetric_n(pretrained=pretrained, n_classes=n_classes, depth_n=depth_n)
+            model = drn_a_asymmetric_n(pretrained=pretrained, n_classes=n_classes, depth_n=depth_n, input_channel=input_channel)
         elif model_name=='drn_a_n':
             # print('depth_n:', depth_n)
-            model = drn_a_n(pretrained=pretrained, n_classes=n_classes, depth_n=depth_n)
+            model = drn_a_n(pretrained=pretrained, n_classes=n_classes, depth_n=depth_n, input_channel=input_channel)
         else:
-            model = eval(model_name)(pretrained=pretrained, n_classes=n_classes)
+            model = eval(model_name)(pretrained=pretrained, n_classes=n_classes, input_channel=input_channel)
         # pmodel = nn.DataParallel(model)
         # if pretrained_model is not None:
             # pmodel.load_state_dict(pretrained_model)
