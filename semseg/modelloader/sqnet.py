@@ -6,7 +6,8 @@ import time
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
-import torch.functional as F
+# import torch.functional as F
+import torch.nn.functional as F
 import numpy as np
 import torch.optim as optim
 import math
@@ -150,6 +151,7 @@ class FCN(nn.Module):
         # x = x.transpose(1, 2, 0)
         # print('x_3.size():', x_3.size())
         # print('y_3.size():', y_3.size())
+        x_3 = F.upsample_bilinear(x_3, y_3.size()[2:])
         x = torch.cat([x_3, y_3], 1)
         x = self.conv3_2(x)
         x = self.relu3_2(x)
@@ -160,6 +162,9 @@ class FCN(nn.Module):
         x_2 = self.relu2_1(x_2)
         # print "y_2: %s" % str(y_2.size())
         # concat x_2
+        # print('x_2.size():', x_2.size())
+        # print('y_2.size():', y_2.size())
+        y_2 = F.upsample_bilinear(y_2, x_2.size()[2:])
         x = torch.cat([x_2, y_2], 1)
         x = self.conv2_2(x)
         x = self.relu2_2(x)
@@ -188,8 +193,8 @@ if __name__ == '__main__':
     # model.init_vgg16()
     x = Variable(torch.randn(1, 3, 360, 480))
     y = Variable(torch.LongTensor(np.ones((1, 360, 480), dtype=np.int)))
-    x = Variable(torch.randn(1, 3, 512, 1024))
-    y = Variable(torch.LongTensor(np.ones((1, 512, 1024), dtype=np.int)))
+    # x = Variable(torch.randn(1, 3, 512, 1024))
+    # y = Variable(torch.LongTensor(np.ones((1, 512, 1024), dtype=np.int)))
     # print(x.shape)
     start = time.time()
     pred = model(x)
