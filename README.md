@@ -26,6 +26,7 @@
 - BiSeNet，已实现，主要是ResNet-18和ResNet-101，其余类似。
 - FRRN，已实现，FRRN A和FRRN B。
 - 增加YOLO-V1多任务学习，还未完全测试。
+- GCN
 - ...
 - 
 ---

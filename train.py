@@ -32,6 +32,7 @@ from semseg.modelloader.fcn_mobilenet import fcn_MobileNet, fcn_MobileNet_32s, f
 from semseg.modelloader.fcn_resnet import fcn_resnet18, fcn_resnet34, fcn_resnet18_32s, fcn_resnet18_16s, \
     fcn_resnet18_8s, fcn_resnet34_32s, fcn_resnet34_16s, fcn_resnet34_8s, fcn_resnet50_32s, fcn_resnet50_16s, fcn_resnet50_8s
 from semseg.modelloader.fcn_shufflenet import fcn_shufflenet_32s, fcn_shufflenet_16s, fcn_shufflenet_8s
+from semseg.modelloader.gcn import gcn_resnet18, gcn_resnet34, gcn_resnet50, gcn_resnet101
 from semseg.modelloader.lrn import lrn_vgg16
 from semseg.modelloader.segnet import segnet, segnet_squeeze, segnet_alignres, segnet_vgg19
 from semseg.modelloader.segnet_unet import segnet_unet
