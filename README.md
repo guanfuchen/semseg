@@ -34,6 +34,7 @@
 
 这个仓库旨在实现常用的语义分割算法，主要参考如下：
 - [pytorch-semseg](https://github.com/meetshah1995/pytorch-semseg)
+- [pytorch-semantic-segmentation](https://github.com/zijundeng/pytorch-semantic-segmentation)
 - [Semantic-Segmentation-Suite](https://github.com/GeorgeSeif/Semantic-Segmentation-Suite)，和pytorch对应的tensorflow语义分割框架实现。
 - [awesome-semantic-segmentation](https://github.com/mrgloom/awesome-semantic-segmentation)，语义分割的awesome系列。
 - [segmentation_models](https://github.com/qubvel/segmentation_models)，作者引入了不同backbones的不同分割模型组合，包括VGG16，VGG19，ResNet18，ResNet34，ResNet50，ResNet101，ResNet152和ResNeXt系列，DenseNet和Inception变种同UNet、LinkNet和PSPNet等结合，**进一步开发将包含多种的backbones**。

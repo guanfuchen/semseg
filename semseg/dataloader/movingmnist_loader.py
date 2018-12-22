@@ -14,78 +14,54 @@ from torchvision import transforms
 import glob
 import torchfile
 
+class movingmnistLoader(data.Dataset):
 
-class segmpredLoader(data.Dataset):
-    colors = [  # [  0,   0,   0],
-        [128, 64, 128],
-        [244, 35, 232],
-        [70, 70, 70],
-        [102, 102, 156],
-        [190, 153, 153],
-        [153, 153, 153],
-        [250, 170, 30],
-        [220, 220, 0],
-        [107, 142, 35],
-        [152, 251, 152],
-        [0, 130, 180],
-        [220, 20, 60],
-        [255, 0, 0],
-        [0, 0, 142],
-        [0, 0, 70],
-        [0, 60, 100],
-        [0, 80, 100],
-        [0, 0, 230],
-        [119, 11, 32],
-    ]
-
-    label_colours = dict(zip(range(19), colors))
-
-    def __init__(self, root, split="train", is_transform=False, is_augment=False):
+    def __init__(self, root, split="train", is_transform=False, is_augment=False, split_ratio=0.7):
         self.root = root
         self.split = split
         self.is_transform = is_transform
         self.is_augment = is_augment
+        self.split_ratio = split_ratio
 
-        self.mean = np.array([104.00699, 116.66877, 122.67892])
-        self.n_classes = 19
-        self.files = collections.defaultdict(list)
-
-        file_list = glob.glob(root + '/' + split + '/*.t7')
-        file_list.sort()
-        # print('file_list:', file_list)
-        self.files[split] = file_list
+        self.n_classes = 2
+        colors = [
+            [0, 0, 0],
+            [255, 255, 255],
+        ]
+        self.label_colours = dict(zip(range(self.n_classes), colors))
+        self.data = np.load(self.root).transpose(1, 0, 2, 3) # from TxSxHxW to SxTxHxW
+        all_len = len(self.data[:, 0, 0, 0])
+        split_index = int(all_len*split_ratio)
+        if self.split=='train':
+            self.data = self.data[:split_index]
+        elif self.split=='val':
+            self.data = self.data[split_index:]
+        print('self.data.shape:', self.data.shape)
 
     def __len__(self):
-        return len(self.files[self.split])
+        return len(self.data[:, 0, 0, 0])
 
     def __getitem__(self, index):
-        pass
-        img_name = self.files[self.split][index]
-        img_file_name = img_name[img_name.rfind('/')+1:img_name.rfind('.')]
-        img_path = self.root + '/' + self.split + '/' + img_file_name + '.t7'
-        # print('img_path:', img_path)
-        img_pred = torchfile.load(img_path)
-        import random
-        random_batch_id = random.randint(0, 3)
-        # print('random_batch_id:', random_batch_id)
-        # random_batch_id = 0
-        img_sequences = img_pred['R8s'][random_batch_id, ...]
-        # print('img_sequences.shape:', img_sequences.shape)
-        img_past = img_sequences[0:4, ...]
-        img_future_onehot = img_sequences[4, ...]
+        img_np = self.data[index, ...]
+        # img_np = (img_np-128)//128
+        # print(img_np[0, 0, 0])
+        img_np = np.clip(img_np, 0, 1)
+        # print(img_np[0, 0, 0])
+        # print(np.max(img_np))
+        # print(np.min(img_np))
+        # print(np.unique(img_np))
+        # print('img_np.shape:', img_np.shape)
+        img_past = img_np[:9]
+        img_future = img_np[9]
+
         img_past = np.array(img_past, dtype=np.uint8)
-        img_future_onehot = np.array(img_future_onehot, dtype=np.int32)
+        img_future = np.array(img_future, dtype=np.int32)
 
         img_past = torch.from_numpy(img_past).float()
-        img_future_onehot = torch.from_numpy(img_future_onehot).long()
-        # print(np.unique(img_future_onehot))
+        img_future = torch.from_numpy(img_future).long()
 
-        img_past = img_past.view(-1, 64, 64)
-
-        img_future = np.argmax(img_future_onehot, axis=0)
         # print('img_past.shape:', img_past.shape)
         # print('img_future.shape:', img_future.shape)
-
 
         return img_past, img_future
 
@@ -107,12 +83,11 @@ class segmpredLoader(data.Dataset):
         rgb[:, :, 2] = b
         return rgb
 
-
 if __name__ == '__main__':
     HOME_PATH = os.path.expanduser('~')
-    local_path = os.path.join(HOME_PATH, 'Data/SegmPred')
+    local_path = os.path.join(HOME_PATH, 'Data/mnist_test_seq.npy')
     batch_size = 4
-    dst = segmpredLoader(local_path, is_transform=True, is_augment=False)
+    dst = movingmnistLoader(local_path, is_transform=True, is_augment=False)
     trainloader = data.DataLoader(dst, batch_size=batch_size, shuffle=True)
     for i, (img_past, img_future) in enumerate(trainloader):
         # print(i)
@@ -125,6 +100,7 @@ if __name__ == '__main__':
             # print('img_future_onehot:', img_future_onehot)
             # print('img_future_onehot.shape:', img_future_onehot.shape)
             plt.imshow(dst.decode_segmap(pred_segment))
+            # plt.imshow(pred_segment)
             # print('dst.decode_segmap(pred_segment):', dst.decode_segmap(pred_segment))
         plt.show()
         if i==0:

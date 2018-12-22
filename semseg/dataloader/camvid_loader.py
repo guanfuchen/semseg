@@ -29,8 +29,7 @@ class camvidLoader(data.Dataset):
         self.is_augment = is_augment
         if self.is_augment:
             self.joint_augment_transform = Compose([
-                # RandomSized(int(min(self.img_size)/0.875)),
-                # RandomCrop(self.img_size),
+                RandomSized(int(480)),
                 RandomRotate(degree=10),
                 RandomHorizontallyFlip(),
             ])

@@ -13,11 +13,13 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau, StepLR, MultiStepLR
 from semseg.dataloader.camvid_loader import camvidLoader
 from semseg.dataloader.cityscapes_loader import cityscapesLoader
 from semseg.dataloader.freespace_loader import freespaceLoader
+from semseg.dataloader.movingmnist_loader import movingmnistLoader
 from semseg.dataloader.segmpred_loader import segmpredLoader
 from semseg.loss import cross_entropy2d
 from semseg.metrics import scores
 from semseg.modelloader.EDANet import EDANet
 from semseg.modelloader.bisenet import BiSeNet
+from semseg.modelloader.deconvnet import DeConvResNet50, DeConvResNet18
 from semseg.modelloader.deeplabv3 import Res_Deeplab_101, Res_Deeplab_50
 from semseg.modelloader.drn import drn_d_22, DRNSeg, drn_a_asymmetric_18, drn_a_asymmetric_ibn_a_18, drnseg_a_50, drnseg_a_18, drnseg_a_34, drnseg_e_22, drnseg_a_asymmetric_18, drnseg_a_asymmetric_ibn_a_18, drnseg_d_22, drnseg_d_38
 from semseg.modelloader.drn_a_irb import drnsegirb_a_18
@@ -106,6 +108,11 @@ def train(args):
     elif args.dataset == 'SegmPred':
         train_dst = segmpredLoader(local_path, is_transform=True, split='train')
         val_dst = segmpredLoader(local_path, is_transform=True, split='train')
+    elif args.dataset == 'MovingMNIST':
+        # class_weight = [0.1, 0.5]
+        # class_weight = torch.tensor(class_weight)
+        train_dst = movingmnistLoader(local_path, is_transform=True, split='train')
+        val_dst = movingmnistLoader(local_path, is_transform=True, split='val')
     elif args.dataset == 'FreeSpace':
         train_dst = freespaceLoader(local_path, is_transform=True, split='train')
         val_dst = freespaceLoader(local_path, is_transform=True, split='val')
@@ -137,8 +144,12 @@ def train(args):
             exit(0)
 
         # ---------------for testing SegmPred---------------
+        if args.dataset == 'MovingMNIST':
+            input_channel = 1*9
+        elif args.dataset == 'SegmPred':
+            input_channel = 19*4
         if args.structure == 'drnseg_a_18':
-            model = drnseg_a_18(n_classes=args.n_classes, pretrained=args.init_vgg16, input_channel=19*4)
+            model = drnseg_a_18(n_classes=args.n_classes, pretrained=args.init_vgg16, input_channel=input_channel)
         # ---------------for testing SegmPred---------------
 
         if args.resume_model_state_dict != '':
@@ -212,9 +223,7 @@ def train(args):
                 imgs = imgs.cuda()
                 labels = labels.cuda()
             outputs = model(imgs)
-            # print('outputs.shape:', outputs.shape)
-
-            # print('outputs.size:', outputs.size())
+            # print('imgs.size:', imgs.size())
             # print('labels.size:', labels.size())
 
             loss = cross_entropy2d(outputs, labels, weight=class_weight)
@@ -356,8 +365,8 @@ if __name__=='__main__':
     parser.add_argument('--save_epoch', type=int, default=1, help='save model after epoch [ 1 ]')
     parser.add_argument('--training_epoch', type=int, default=500, help='training epoch end training model [ 30000 ]')
     parser.add_argument('--init_vgg16', type=bool, default=False, help='init model using vgg16 weights [ False ]')
-    parser.add_argument('--dataset', type=str, default='CamVid', help='train dataset [ CamVid CityScapes FreeSpace SegmPred ]')
-    parser.add_argument('--dataset_path', type=str, default='~/Data/CamVid', help='train dataset path [ ~/Data/CamVid ~/Data/cityscapes ~/Data/FreeSpaceDataset ~/Data/SegmPred]')
+    parser.add_argument('--dataset', type=str, default='CamVid', help='train dataset [ CamVid CityScapes FreeSpace SegmPred MovingMNIST ]')
+    parser.add_argument('--dataset_path', type=str, default='~/Data/CamVid', help='train dataset path [ ~/Data/CamVid ~/Data/cityscapes ~/Data/FreeSpaceDataset ~/Data/SegmPred ~/Data/mnist_test_seq.npy]')
     parser.add_argument('--data_augment', type=bool, default=True, help='enlarge the training data [ True False ]')
     parser.add_argument('--class_weighting', type=str, default='MFB', help='weighting class [ MFB ENET ]')
     parser.add_argument('--batch_size', type=int, default=1, help='train dataset batch size [ 1 ]')
