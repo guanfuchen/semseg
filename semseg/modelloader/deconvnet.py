@@ -85,8 +85,8 @@ class DeconvBasicBlock(nn.Module):
         if self.upsample is not None:
             residual = self.upsample(x)
 
-        # print('out.shape:', out.shape)
-        # print('residual.shape:', residual.shape)
+        print('out.shape:', out.shape)
+        print('residual.shape:', residual.shape)
         out += residual
         out = self.relu(out)
 
@@ -192,7 +192,7 @@ class ResNet(nn.Module):
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU()
 
-        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1, return_indices=True)
         self.dlayer1 = self._make_downlayer(downblock, 64, num_layers[0])
         self.dlayer2 = self._make_downlayer(downblock, 128, num_layers[1], stride=2)
         self.dlayer3 = self._make_downlayer(downblock, 256, num_layers[2], stride=2)
@@ -201,7 +201,7 @@ class ResNet(nn.Module):
         self.uplayer1 = self._make_up_block(upblock, 512, num_layers[3], stride=2)
         self.uplayer2 = self._make_up_block(upblock, 256, num_layers[2], stride=2)
         self.uplayer3 = self._make_up_block(upblock, 128, num_layers[1], stride=2)
-        self.uplayer4 = self._make_up_block(upblock, 64, num_layers[0], stride=2)
+        self.uplayer4 = self._make_up_block(upblock, 64, num_layers[0])
 
         # print('self.in_channels:', self.in_channels)
         # upsample = nn.Sequential(
@@ -210,7 +210,7 @@ class ResNet(nn.Module):
         # )
         # self.uplayer_top = upblock(self.in_channels, self.in_channels // 2, 2, upsample)
         # self.conv1_1 = nn.ConvTranspose2d(self.in_channels // 2, n_classes, kernel_size=1, stride=1, bias=False)
-        self.dconv1 = nn.ConvTranspose2d(self.in_channels, n_classes, kernel_size=1, stride=2, bias=False, output_padding=1)
+        # self.dconv1 = nn.ConvTranspose2d(self.in_channels, n_classes, kernel_size=1, stride=2, bias=False, output_padding=1)
 
     def _make_downlayer(self, block, init_channels, num_layer, stride=1):
         downsample = None
@@ -229,17 +229,18 @@ class ResNet(nn.Module):
 
     def _make_up_block(self, block, init_channels, num_layer, stride=1):
         upsample = None
-        # print('init_channels:', init_channels)
-        if stride != 1 or self.in_channels != init_channels * block.expansion // 2:
+        print('init_channels:', init_channels)
+        print('self.in_channels:', self.in_channels)
+        if stride != 1 or self.in_channels != init_channels * block.expansion:
             upsample = nn.Sequential(
-                nn.ConvTranspose2d(self.in_channels, init_channels*block.expansion // 2, kernel_size=1, stride=stride, bias=False, output_padding=1),
-                nn.BatchNorm2d(init_channels*block.expansion // 2),
+                nn.ConvTranspose2d(self.in_channels, init_channels // block.expansion, kernel_size=1, stride=stride, bias=False, output_padding=1),
+                nn.BatchNorm2d(init_channels // block.expansion),
             )
         layers = []
         for i in range(1, num_layer):
             layers.append(block(self.in_channels, init_channels))
-        layers.append(block(self.in_channels, init_channels // 2, stride, upsample))
-        self.in_channels = init_channels * block.expansion // 2
+        layers.append(block(self.in_channels, init_channels // block.expansion, stride, upsample))
+        self.in_channels = init_channels * block.expansion
         return nn.Sequential(*layers)
 
     def forward(self, x):
@@ -248,29 +249,32 @@ class ResNet(nn.Module):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
-        x = self.maxpool(x)
+
+        unpool_shape = x.size()
+        # print(unpool_shape)
+        x, pool_indices = self.maxpool(x)
 
         x = self.dlayer1(x)
-        # print('dlayer1_x.shape:', x.shape)
+        print('dlayer1_x.shape:', x.shape)
         x = self.dlayer2(x)
-        # print('dlayer2_x.shape:', x.shape)
+        print('dlayer2_x.shape:', x.shape)
         x = self.dlayer3(x)
-        # print('dlayer3_x.shape:', x.shape)
+        print('dlayer3_x.shape:', x.shape)
         x = self.dlayer4(x)
-        # print('dlayer4_x.shape:', x.shape)
+        print('dlayer4_x.shape:', x.shape)
 
         x = self.uplayer1(x)
-        # print('uplayer1_x.shape:', x.shape)
+        print('uplayer1_x.shape:', x.shape)
         x = self.uplayer2(x)
-        # print('uplayer2_x.shape:', x.shape)
+        print('uplayer2_x.shape:', x.shape)
         x = self.uplayer3(x)
-        # print('uplayer3_x.shape:', x.shape)
+        print('uplayer3_x.shape:', x.shape)
         x = self.uplayer4(x)
-        # print('uplayer4_x.shape:', x.shape)
+        print('uplayer4_x.shape:', x.shape)
         # x = self.uplayer_top(x)
         # print('uplayer_top_x.shape:', x.shape)
         #
-        x = self.dconv1(x)
+        # x = self.dconv1(x)
         # print('dconv1_x.shape:', x.shape)
 
         return x

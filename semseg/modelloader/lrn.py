@@ -83,11 +83,11 @@ class lrn_vgg16(nn.Module):
             out_s.append(x)
             # print('x.shape:', x.shape)
             # break
-        # return out_s
-        return out_s[-1]
+        return out_s
+        # return out_s[-1]
 
 if __name__ == '__main__':
-    batch_size = 1
+    batch_size = 2
     n_classes = 21
     img_height, img_width = 360, 480
     # img_height, img_width = 1024, 512
@@ -99,6 +99,8 @@ if __name__ == '__main__':
     pred = model(x)
     end = time.time()
     print(end-start)
+    print(len(pred))
+    print(pred[0].shape)
     # print(pred.shape)
     # print('pred.type:', pred.type)
     # loss = cross_entropy2d(pred, y)

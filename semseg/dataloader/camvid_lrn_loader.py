@@ -16,11 +16,12 @@ import glob
 from semseg.dataloader.utils import Compose, RandomHorizontallyFlip, RandomRotate, RandomSized, RandomCrop
 
 
-class camvidLoader(data.Dataset):
-    def __init__(self, root, split="train", is_transform=False, is_augment=False):
+class camvidLRNLoader(data.Dataset):
+    def __init__(self, root, split="train", is_transform=False, is_augment=False, img_sizes=[(11, 15), (22, 30), (45, 60), (90, 120,), (180, 240), (360, 480)]):
         self.root = root
         self.split = split
         self.img_size = (360, 480) # (h, w)
+        self.img_sizes = img_sizes
         self.is_transform = is_transform
         self.mean = np.array([104.00699, 116.66877, 122.67892])
         self.n_classes = 12
@@ -43,27 +44,34 @@ class camvidLoader(data.Dataset):
         return len(self.files[self.split])
 
     def __getitem__(self, index):
-        img_name = self.files[self.split][index]
-        img_file_name = img_name[img_name.rfind('/')+1:img_name.rfind('.')]
-        # img_file_name = img_name[:img_name.rfind('.')]
-        # print(img_file_name)
-        img_path = self.root + '/' + self.split + '/' + img_file_name + '.png'
-        lbl_path = self.root + '/' + self.split + 'annot/' + img_file_name + '.png'
+        imgs = []
+        lbls = []
+        for img_size in self.img_sizes:
+            img_name = self.files[self.split][index]
+            img_file_name = img_name[img_name.rfind('/') + 1:img_name.rfind('.')]
+            # img_file_name = img_name[:img_name.rfind('.')]
+            # print(img_file_name)
+            img_path = self.root + '/' + self.split + '/' + img_file_name + '.png'
+            lbl_path = self.root + '/' + self.split + 'annot/' + img_file_name + '.png'
 
-        img = Image.open(img_path)
-        lbl = Image.open(lbl_path)
+            img = Image.open(img_path)
+            lbl = Image.open(lbl_path)
 
-        if self.is_augment:
-            if self.joint_augment_transform is not None:
-                img, lbl = self.joint_augment_transform(img, lbl)
+            img = img.resize((img_size[1], img_size[0]))
+            lbl = lbl.resize((img_size[1], img_size[0]))
 
-        img = np.array(img, dtype=np.uint8)
-        lbl = np.array(lbl, dtype=np.int32)
+            if self.is_augment:
+                if self.joint_augment_transform is not None:
+                    img, lbl = self.joint_augment_transform(img, lbl)
 
-        if self.is_transform:
-            img, lbl = self.transform(img, lbl)
+            img = np.array(img, dtype=np.uint8)
+            lbl = np.array(lbl, dtype=np.int32)
 
-        return img, lbl
+            if self.is_transform:
+                img, lbl = self.transform(img, lbl)
+            imgs.append(img)
+            lbls.append(lbl)
+        return imgs, lbls
 
     # 转换HWC为CHW
     def transform(self, img, lbl):
@@ -131,22 +139,25 @@ if __name__ == '__main__':
     HOME_PATH = os.path.expanduser('~')
     local_path = os.path.join(HOME_PATH, 'Data/CamVid')
     batch_size = 4
-    dst = camvidLoader(local_path, is_transform=True, is_augment=False)
+    dst = camvidLRNLoader(local_path, is_transform=True, is_augment=False)
     trainloader = data.DataLoader(dst, batch_size=batch_size, shuffle=True)
     for i, (imgs, labels) in enumerate(trainloader):
         print(i)
-        print(imgs.shape)
-        print(labels.shape)
+        print(len(imgs))
+        print(imgs[-1].shape)
+        # print(imgs.shape)
+        # print(labels.shape)
         # if i == 0:
-        image_list_len = imgs.shape[0]
+        image_list_len = imgs[-1].shape[0]
         for image_list in range(image_list_len):
-            img = imgs[image_list, :, :, :]
+            img = imgs[-1][image_list, :, :, :]
+            # print('img.shape:', img.shape)
             img = img.numpy()
             img = np.transpose(img, (1, 2, 0))
             plt.subplot(image_list_len, 2, 2 * image_list + 1)
             plt.imshow(img)
             plt.subplot(image_list_len, 2, 2 * image_list + 2)
-            plt.imshow(dst.decode_segmap(labels.numpy()[image_list]))
+            plt.imshow(dst.decode_segmap(labels[-1].numpy()[image_list]))
             # print(dst.decode_segmap(labels.numpy()[image_list])[0, 0, :])
         plt.show()
         if i==0:
