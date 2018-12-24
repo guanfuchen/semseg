@@ -65,7 +65,7 @@ class segmpredLoader(data.Dataset):
         img_path = self.root + '/' + self.split + '/' + img_file_name + '.t7'
         # print('img_path:', img_path)
         img_pred = torchfile.load(img_path)
-        import random
+        # import random
         random_batch_id = random.randint(0, 3)
         # print('random_batch_id:', random_batch_id)
         # random_batch_id = 0
@@ -80,7 +80,8 @@ class segmpredLoader(data.Dataset):
         img_future_onehot = torch.from_numpy(img_future_onehot).long()
         # print(np.unique(img_future_onehot))
 
-        img_past = img_past.view(-1, 64, 64)
+        # print('img_past.shape:', img_past.shape)
+        img_past = img_past.view(-1, img_past.shape[2], img_past.shape[3])
 
         img_future = np.argmax(img_future_onehot, axis=0)
         # print('img_past.shape:', img_past.shape)

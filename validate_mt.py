@@ -117,9 +117,9 @@ def validate(args):
         vis = visdom.Visdom()
         vis.close()
 
-        vis_text_usage = 'Operating in the text window<br>Press s to save data<br>'
-        callback_text_usage_window = vis.text(vis_text_usage)
-        vis.register_event_handler(type_callback, callback_text_usage_window)
+        # vis_text_usage = 'Operating in the text window<br>Press s to save data<br>'
+        # callback_text_usage_window = vis.text(vis_text_usage)
+        # vis.register_event_handler(type_callback, callback_text_usage_window)
 
     class_weight = None
     local_path = os.path.expanduser(args.dataset_path)
