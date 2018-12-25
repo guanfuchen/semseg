@@ -55,6 +55,12 @@ class segmpredLoader(data.Dataset):
         # print('file_list:', file_list)
         self.files[split] = file_list
 
+        if self.split == 'train':
+            self.input_shape = (64, 64)
+        elif self.split == 'val':
+            self.input_shape = (128, 256)
+            # self.input_shape = (64, 64)
+
     def __len__(self):
         return len(self.files[self.split])
 
@@ -84,6 +90,9 @@ class segmpredLoader(data.Dataset):
         img_past = img_past.view(-1, img_past.shape[2], img_past.shape[3])
 
         img_future = np.argmax(img_future_onehot, axis=0)
+
+        # img_past = img_past[:, :64, :64]
+        # img_future = img_future[:64, :64]
         # print('img_past.shape:', img_past.shape)
         # print('img_future.shape:', img_future.shape)
 

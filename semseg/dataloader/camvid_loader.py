@@ -42,6 +42,8 @@ class camvidLoader(data.Dataset):
     def __len__(self):
         return len(self.files[self.split])
 
+    # def get_class_weight(self):
+
     def __getitem__(self, index):
         img_name = self.files[self.split][index]
         img_file_name = img_name[img_name.rfind('/')+1:img_name.rfind('.')]

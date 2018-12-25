@@ -13,33 +13,12 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau, StepLR, MultiStepLR
 from semseg.dataloader.camvid_loader import camvidLoader
 from semseg.dataloader.cityscapes_loader import cityscapesLoader
 from semseg.dataloader.freespace_loader import freespaceLoader
+from semseg.dataloader.freespacepred_loader import freespacepredLoader
 from semseg.dataloader.movingmnist_loader import movingmnistLoader
 from semseg.dataloader.segmpred_loader import segmpredLoader
 from semseg.loss import cross_entropy2d
 from semseg.metrics import scores
-from semseg.modelloader.EDANet import EDANet
-from semseg.modelloader.bisenet import BiSeNet
-from semseg.modelloader.deconvnet import DeConvResNet50, DeConvResNet18
-from semseg.modelloader.deeplabv3 import Res_Deeplab_101, Res_Deeplab_50
-from semseg.modelloader.drn import drn_d_22, DRNSeg, drn_a_asymmetric_18, drn_a_asymmetric_ibn_a_18, drnseg_a_50, drnseg_a_18, drnseg_a_34, drnseg_e_22, drnseg_a_asymmetric_18, drnseg_a_asymmetric_ibn_a_18, drnseg_d_22, drnseg_d_38
-from semseg.modelloader.drn_a_irb import drnsegirb_a_18
-from semseg.modelloader.drn_a_refine import drnsegrefine_a_18
-from semseg.modelloader.drn_pred import drnsegpred_a_18
-from semseg.modelloader.duc_hdc import ResNetDUC, ResNetDUCHDC
-from semseg.modelloader.enet import ENet
-from semseg.modelloader.enetv2 import ENetV2
-from semseg.modelloader.erfnet import erfnet
-from semseg.modelloader.fc_densenet import fcdensenet103, fcdensenet56, fcdensenet_tiny
-from semseg.modelloader.fcn import fcn, fcn_32s, fcn_16s, fcn_8s
-from semseg.modelloader.fcn_mobilenet import fcn_MobileNet, fcn_MobileNet_32s, fcn_MobileNet_16s, fcn_MobileNet_8s
-from semseg.modelloader.fcn_resnet import fcn_resnet18, fcn_resnet34, fcn_resnet18_32s, fcn_resnet18_16s, \
-    fcn_resnet18_8s, fcn_resnet34_32s, fcn_resnet34_16s, fcn_resnet34_8s, fcn_resnet50_32s, fcn_resnet50_16s, fcn_resnet50_8s
-from semseg.modelloader.fcn_shufflenet import fcn_shufflenet_32s, fcn_shufflenet_16s, fcn_shufflenet_8s
-from semseg.modelloader.gcn import gcn_resnet18, gcn_resnet34, gcn_resnet50, gcn_resnet101
-from semseg.modelloader.lrn import lrn_vgg16
-from semseg.modelloader.segnet import segnet, segnet_squeeze, segnet_alignres, segnet_vgg19
-from semseg.modelloader.segnet_unet import segnet_unet
-from semseg.modelloader.sqnet import sqnet
+from semseg.modelloader.drn_pred import drnsegpred_a_18, drnpred_a_101, drnsegpred_a_101, drnsegpred_a_34
 from semseg.schedulers import ConstantLR, PolynomialLR
 from semseg.utils.get_class_weights import median_frequency_balancing, ENet_weighing
 
@@ -91,32 +70,19 @@ def train(args):
     local_path = os.path.expanduser(args.dataset_path)
     train_dst = None
     val_dst = None
-    if args.dataset == 'CamVid':
-        train_dst = camvidLoader(local_path, is_transform=True, is_augment=args.data_augment, split='train')
-        val_dst = camvidLoader(local_path, is_transform=True, is_augment=False, split='val')
-
-        trainannot_image_dir = os.path.expanduser(os.path.join(local_path, "trainannot"))
-        trainannot_image_files = [os.path.join(trainannot_image_dir, file) for file in os.listdir(trainannot_image_dir) if file.endswith('.png')]
-        if args.class_weighting=='MFB':
-            class_weight = median_frequency_balancing(trainannot_image_files, num_classes=12)
-            class_weight = torch.tensor(class_weight)
-        elif args.class_weighting=='ENET':
-            class_weight = ENet_weighing(trainannot_image_files, num_classes=12)
-            class_weight = torch.tensor(class_weight)
-    elif args.dataset == 'CityScapes':
-        train_dst = cityscapesLoader(local_path, is_transform=True, split='train')
-        val_dst = cityscapesLoader(local_path, is_transform=True, split='val')
-    elif args.dataset == 'SegmPred':
+    if args.dataset == 'SegmPred':
+        input_channel = 19
         train_dst = segmpredLoader(local_path, is_transform=True, split='train')
-        val_dst = segmpredLoader(local_path, is_transform=True, split='train')
+        val_dst = segmpredLoader(local_path, is_transform=True, split='val')
     elif args.dataset == 'MovingMNIST':
         # class_weight = [0.1, 0.5]
         # class_weight = torch.tensor(class_weight)
         train_dst = movingmnistLoader(local_path, is_transform=True, split='train')
         val_dst = movingmnistLoader(local_path, is_transform=True, split='val')
-    elif args.dataset == 'FreeSpace':
-        train_dst = freespaceLoader(local_path, is_transform=True, split='train')
-        val_dst = freespaceLoader(local_path, is_transform=True, split='val')
+    elif args.dataset == 'FreeSpacePred':
+        input_channel = 1
+        train_dst = freespacepredLoader(local_path, is_transform=True, split='train')
+        val_dst = freespacepredLoader(local_path, is_transform=True, split='val')
     else:
         print('{} dataset does not implement'.format(args.dataset))
         exit(0)
@@ -138,7 +104,8 @@ def train(args):
         start_epoch = int(args.resume_model[start_epoch_id1+1:start_epoch_id2])
     else:
         # ---------------for testing SegmPred---------------
-        model = drnsegpred_a_18(n_classes=args.n_classes, pretrained=args.init_vgg16)
+        model = eval(args.structure)(n_classes=args.n_classes, pretrained=args.init_vgg16, input_shape=train_dst.input_shape, input_channel=input_channel)
+        val_model = eval(args.structure)(n_classes=args.n_classes, pretrained=args.init_vgg16, input_shape=val_dst.input_shape, input_channel=input_channel)
         # ---------------for testing SegmPred---------------
 
         if args.resume_model_state_dict != '':
@@ -158,10 +125,9 @@ def train(args):
             except KeyError:
                 print('missing resume_model_state_dict or wrong type')
 
-
-
     if args.cuda:
         model.cuda()
+        val_model.cuda()
     print('start_epoch:', start_epoch)
     print('best_mIoU:', best_mIoU)
 
@@ -214,6 +180,7 @@ def train(args):
             outputs = model(imgs)
             # print('imgs.size:', imgs.size())
             # print('labels.size:', labels.size())
+            # print('outputs.size:', outputs.size())
 
             loss = cross_entropy2d(outputs, labels, weight=class_weight)
 
@@ -259,7 +226,9 @@ def train(args):
         # val result on val dataset and pick best to save
         if args.val_interval > 0  and epoch % args.val_interval == 0:
             print('----starting val----')
-            model.eval()
+            # model.eval()
+            val_model.load_state_dict(model.state_dict())
+            val_model.eval()
 
             val_gts, val_preds = [], []
             for val_i, (val_imgs, val_labels) in enumerate(val_loader):
@@ -271,7 +240,8 @@ def train(args):
                     val_imgs = val_imgs.cuda()
                     val_labels = val_labels.cuda()
 
-                val_outputs = model(val_imgs)
+                # val_outputs = model(val_imgs)
+                val_outputs = val_model(val_imgs)
                 val_pred = val_outputs.cpu().data.max(1)[1].numpy()
                 val_gt = val_labels.cpu().data.numpy()
                 for val_gt_, val_pred_ in zip(val_gt, val_pred):
@@ -345,7 +315,7 @@ def train(args):
 if __name__=='__main__':
     # print('train----in----')
     parser = argparse.ArgumentParser(description='training parameter setting')
-    parser.add_argument('--structure', type=str, default='ENetV2', help='use the net structure to segment [ fcn_32s ResNetDUC segnet ENet drn_d_22 ]')
+    parser.add_argument('--structure', type=str, default='drnsegpred_a_18', help='use the net structure to segment [ fcn_32s ResNetDUC segnet ENet drn_d_22 ]')
     parser.add_argument('--solver', type=str, default='Adam', help='use the solver to optimizer net [ SGD Adam RMSprop ]')
     parser.add_argument('--grad_acc_steps', type=int, default=1, help='gpu memory not enough use grad accumulation act like large batch [ 1 ]')
     parser.add_argument('--resume_model', type=str, default='', help='resume model path [ fcn32s_camvid_9.pkl ]')

@@ -74,10 +74,10 @@ class ConvLSTMCell(nn.Module):
         return h_next, c_next
 
     def init_hidden(self, batch_size):
-        return (Variable(torch.zeros(batch_size, self.hidden_dim, self.height, self.width)).cuda(),
-                Variable(torch.zeros(batch_size, self.hidden_dim, self.height, self.width)).cuda())
-        # return (Variable(torch.zeros(batch_size, self.hidden_dim, self.height, self.width)),
-        #         Variable(torch.zeros(batch_size, self.hidden_dim, self.height, self.width)))
+        if next(self.parameters()).is_cuda:
+            return (Variable(torch.zeros(batch_size, self.hidden_dim, self.height, self.width)).cuda(), Variable(torch.zeros(batch_size, self.hidden_dim, self.height, self.width)).cuda())
+        else:
+            return (Variable(torch.zeros(batch_size, self.hidden_dim, self.height, self.width)), Variable(torch.zeros(batch_size, self.hidden_dim, self.height, self.width)))
 
 
 class ConvLSTM(nn.Module):
@@ -151,8 +151,7 @@ class ConvLSTM(nn.Module):
             h, c = hidden_state[layer_idx]
             output_inner = []
             for t in range(seq_len):
-                h, c = self.cell_list[layer_idx](input_tensor=cur_layer_input[:, t, :, :, :],
-                                                 cur_state=[h, c])
+                h, c = self.cell_list[layer_idx](input_tensor=cur_layer_input[:, t, :, :, :], cur_state=[h, c])
                 output_inner.append(h)
 
             layer_output = torch.stack(output_inner, dim=1)
@@ -359,14 +358,27 @@ class DRNPred_A(nn.Module):
 
 def drnpred_a_18(pretrained=False, **kwargs):
     model = DRNPred_A(BasicBlock, [2, 2, 2, 2], **kwargs)
-    # if pretrained:
-    #     model.load_state_dict(model_zoo.load_url('https://s3.amazonaws.com/pytorch/models/resnet18-5c106cde.pth'))
     return model
 
+def drnpred_a_34(pretrained=False, **kwargs):
+    model = DRNPred_A(BasicBlock, [3, 4, 6, 3], **kwargs)
+    return model
+
+def drnpred_a_101(pretrained=False, **kwargs):
+    model = DRNPred_A(Bottleneck, [3, 4, 23, 3], **kwargs)
+    return model
 
 # -------------------------semantic model----------------------------------
-def drnsegpred_a_18(pretrained=False, n_classes=21):
-    model = DRNSegPred(model_name='drnpred_a_18', pretrained=pretrained, input_channel=n_classes*4)
+def drnsegpred_a_18(pretrained=False, n_classes=21, input_shape = (64, 64), input_channel=19):
+    model = DRNSegPred(model_name='drnpred_a_18', pretrained=pretrained, input_channel=input_channel, input_shape=input_shape, n_classes=n_classes)
+    return model
+
+def drnsegpred_a_34(pretrained=False, n_classes=21, input_shape = (64, 64), input_channel=19):
+    model = DRNSegPred(model_name='drnpred_a_34', pretrained=pretrained, input_channel=input_channel, input_shape=input_shape, n_classes=n_classes)
+    return model
+
+def drnsegpred_a_101(pretrained=False, n_classes=21, input_shape = (64, 64), input_channel=19):
+    model = DRNSegPred(model_name='drnpred_a_101', pretrained=pretrained, input_channel=input_channel, input_shape=input_shape, n_classes=n_classes)
     return model
 # -----------------------------------------------------------
 
@@ -383,12 +395,15 @@ def fill_up_weights(up):
 
 # drn segnet network
 class DRNSegPred(nn.Module):
-    def __init__(self, model_name, pretrained=False, use_torch_up=True, input_channel=3):
+    def __init__(self, model_name, pretrained=False, use_torch_up=True, input_channel=19, input_shape=(64, 64), n_classes=21):
         super(DRNSegPred, self).__init__()
+        self.input_shape = input_shape
+        self.n_classes = n_classes
+        self.input_channel = input_channel
 
-        model = eval(model_name)(pretrained=pretrained, input_channel=input_channel)
+        model = eval(model_name)(pretrained=pretrained, input_channel=input_channel*4)
         self.base = model
-        self.seg = nn.Conv2d(model.out_dim, input_channel, kernel_size=1)
+        self.seg = nn.Conv2d(model.out_dim, input_channel*4, kernel_size=1)
         m = self.seg
 
         # 初始化分割图最后的卷积weights和bias
@@ -401,17 +416,17 @@ class DRNSegPred(nn.Module):
         # ----lstm seq----
 
         # ----conv lstm seq----
-        self.lstm1 = ConvLSTM(input_size=(8, 8), input_dim=19, hidden_dim=[64, 64, 19], kernel_size=(3, 3), num_layers=3, batch_first=True, bias=True, return_all_layers=False)
+        self.lstm1 = ConvLSTM(input_size=(self.input_shape[0]//8, self.input_shape[1]//8), input_dim=self.input_channel, hidden_dim=[128, 128, self.input_channel], kernel_size=(3, 3), num_layers=3, batch_first=True, bias=True, return_all_layers=False)
         # ----conv lstm seq----
 
-        self.out_conv = nn.Conv2d(76, 19, kernel_size=1)
+        self.out_conv = nn.Conv2d(self.input_channel*4, self.n_classes, kernel_size=1)
 
         if use_torch_up:
             # 使用pytorch双线性上采样
             self.up = nn.UpsamplingBilinear2d(scale_factor=8)
         else:
             # 使用转置卷积上采样
-            up = nn.ConvTranspose2d(input_channel, input_channel, 16, stride=8, padding=4, output_padding=0, groups=input_channel, bias=False)
+            up = nn.ConvTranspose2d(input_channel*4, input_channel*4, 16, stride=8, padding=4, output_padding=0, groups=input_channel*4, bias=False)
             fill_up_weights(up)
             up.weight.requires_grad = False
             self.up = up
@@ -429,11 +444,13 @@ class DRNSegPred(nn.Module):
         # ----lstm seq----
 
         # ----conv lstm seq----
-        x = x.view(-1, 4, 19, 8, 8)
+        # print('x.shape:', x.shape)
+        # print('self.input_channel:', self.input_channel)
+        x = x.view(-1, 4, self.input_channel, self.input_shape[0]//8, self.input_shape[1]//8)
         # print('x.shape:', x.shape)
         x, _ = self.lstm1(x)
         # print('x.shape:', x.shape)
-        x = x.view(-1, 4*19, 8, 8)
+        x = x.view(-1, 4*self.input_channel, self.input_shape[0]//8, self.input_shape[1]//8)
         # ----conv lstm seq----
 
         x = self.out_conv(x)

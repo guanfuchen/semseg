@@ -97,6 +97,9 @@ def validate(args):
             labels = labels.cuda()
 
         outputs = model(imgs)
+        # print('imgs.size:', imgs.size())
+        # print('labels.size:', labels.size())
+        # print('outputs.size:', outputs.size())
         loss = cross_entropy2d(outputs, labels)
         loss_np = loss.cpu().data.numpy()
         loss_np_float = float(loss_np)

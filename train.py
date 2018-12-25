@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-_resnet18_32s
+import datetime
+
 import torch
 import os
 import argparse
@@ -44,47 +46,14 @@ from semseg.utils.get_class_weights import median_frequency_balancing, ENet_weig
 
 
 def train(args):
-    def type_callback(event):
-        # print('event_type:{}'.format(event['event_type']))
-        if event['event_type'] == 'KeyPress':
-            event_key = event['key']
-            if event_key == 'Enter':
-                pass
-                # print('event_type:Enter')
-            elif event_key == 'Backspace':
-                pass
-                # print('event_type:Backspace')
-            elif event_key == 'Delete':
-                pass
-                # print('event_type:Delete')
-            elif len(event_key) == 1:
-                pass
-                # print('event_key:{}'.format(event['key']))
-                if event_key=='s':
-                    import json
-                    win = 'loss_iteration'
-                    win_data = vis.get_window_data(win)
-                    win_data_dict = json.loads(win_data)
-                    win_data_content_dict = win_data_dict['content']
-                    win_data_x = np.array(win_data_content_dict['data'][0]['x'])
-                    win_data_y = np.array(win_data_content_dict['data'][0]['y'])
-
-                    win_data_save_file = '/tmp/loss_iteration_{}.txt'.format(init_time)
-                    with open(win_data_save_file, 'wb') as f:
-                        for item_x, item_y in zip(win_data_x, win_data_y):
-                            f.write("{} {}\n".format(item_x, item_y))
-                    done_time = str(int(time.time()))
-                    vis.text(vis_text_usage+'done at {}'.format(done_time), win=callback_text_usage_window)
-
-    init_time = str(int(time.time()))
+    now = datetime.datetime.now()
+    now_str = '{}-{}-{} {}:{}:{}'.format(now.year, now.month, now.day, now.hour, now.minute, now.second)
+    # print('now:', now)
+    # print('now_str:', now_str)
     if args.vis:
         # start visdom and close all window
-        vis = visdom.Visdom()
+        vis = visdom.Visdom(env=now_str)
         vis.close()
-
-        vis_text_usage = 'Operating in the text window<br>Press s to save data<br>'
-        callback_text_usage_window = vis.text(vis_text_usage)
-        vis.register_event_handler(type_callback, callback_text_usage_window)
 
     class_weight = None
     local_path = os.path.expanduser(args.dataset_path)
@@ -225,6 +194,7 @@ def train(args):
             outputs = model(imgs)
             # print('imgs.size:', imgs.size())
             # print('labels.size:', labels.size())
+            # print('outputs.size:', outputs.size())
 
             loss = cross_entropy2d(outputs, labels, weight=class_weight)
 
@@ -374,7 +344,7 @@ if __name__=='__main__':
     parser.add_argument('--n_classes', type=int, default=12, help='train class num [ 12 ]')
     parser.add_argument('--lr', type=float, default=1e-4, help='train learning rate [ 0.00001 ]')
     parser.add_argument('--lr_policy', type=str, default='Polynomial', help='train learning policy [ Constant Polynomial MultiStep ]')
-    parser.add_argument('--vis', type=bool, default=False, help='visualize the training results [ False ]')
+    parser.add_argument('--vis', type=bool, default=True, help='visualize the training results [ False ]')
     parser.add_argument('--cuda', type=bool, default=False, help='use cuda [ False ]')
     args = parser.parse_args()
     print(args)

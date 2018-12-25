@@ -23,6 +23,7 @@ from semseg.modelloader.deeplabv3 import Res_Deeplab_101, Res_Deeplab_50
 from semseg.modelloader.drn import drn_d_22, DRNSeg, drn_a_asymmetric_18, drn_a_asymmetric_ibn_a_18, drnseg_a_50, drnseg_a_18, drnseg_a_34, drnseg_e_22, drnseg_a_asymmetric_18, drnseg_a_asymmetric_ibn_a_18, drnseg_d_22, drnseg_d_38
 from semseg.modelloader.drn_a_irb import drnsegirb_a_18
 from semseg.modelloader.drn_a_refine import drnsegrefine_a_18
+from semseg.modelloader.drn_pred import drnsegpred_a_18
 from semseg.modelloader.duc_hdc import ResNetDUC, ResNetDUCHDC
 from semseg.modelloader.enet import ENet
 from semseg.modelloader.enetv2 import ENetV2
@@ -42,11 +43,7 @@ def validate(args):
     init_time = str(int(time.time()))
     if args.vis:
         vis = visdom.Visdom()
-    if args.dataset_path == '':
-        HOME_PATH = os.path.expanduser('~')
-        local_path = os.path.join(HOME_PATH, 'Data/CamVid')
-    else:
-        local_path = args.dataset_path
+
     local_path = os.path.expanduser(args.dataset_path)
     if args.dataset == 'CamVid':
         dst = camvidLoader(local_path, is_transform=True, split=args.dataset_type)
@@ -66,19 +63,18 @@ def validate(args):
     if args.validate_model != '':
         model = torch.load(args.validate_model)
     else:
-        if args.dataset == 'MovingMNIST':
-            input_channel = 1*9
-        elif args.dataset == 'SegmPred':
-            input_channel = 19*4
-        if args.structure == 'drnseg_a_18':
-            model = drnseg_a_18(n_classes=args.n_classes, pretrained=args.init_vgg16, input_channel=input_channel)
-        else:
+        # ---------------for testing SegmPred---------------
+        try:
+            model = drnsegpred_a_18(n_classes=args.n_classes, pretrained=args.init_vgg16, input_shape=dst.input_shape)
+        except:
+            print('missing structure or not support')
             exit(0)
         if args.validate_model_state_dict != '':
             try:
                 model.load_state_dict(torch.load(args.validate_model_state_dict, map_location='cpu'))
             except KeyError:
                 print('missing key')
+        # ---------------for testing SegmPred---------------
     if args.cuda:
         model.cuda()
     # some model load different mode different performance
@@ -105,7 +101,11 @@ def validate(args):
             imgs = imgs.cuda()
             labels = labels.cuda()
 
+        # print('imgs.shape', imgs.shape)
+        # print('labels.shape', labels.shape)
+
         outputs = model(imgs)
+        # print('outputs.shape', outputs.shape)
         loss = cross_entropy2d(outputs, labels)
         loss_np = loss.cpu().data.numpy()
         loss_np_float = float(loss_np)
