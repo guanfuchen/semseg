@@ -24,6 +24,8 @@ from torchvision.transforms import transforms
 from torchvision.datasets import ImageFolder
 from torchvision import transforms, datasets
 
+from semseg.dataloader.camvid_loader import camvidLoader
+
 
 class ImageFolderLMDB(data.Dataset):
     def __init__(self, db_path, transform=None):
@@ -132,10 +134,28 @@ def folder2lmdb(dpath, lmdb_path, write_frequency=5000):
 if __name__ == "__main__":
     # lmdb_path = "{}.lmdb/".format(time.time())
     lmdb_path = "tmp.lmdb"
-    folder2lmdb("~/Data/CamVid/train/", lmdb_path)
+    # folder2lmdb("~/Data/CamVid/train/", lmdb_path)
+
+    batch_size = 1
 
     dst = ImageFolderLMDB(lmdb_path, None)
-    loader = DataLoader(dst, batch_size=64, drop_last=True)
+    loader = DataLoader(dst, batch_size=batch_size, drop_last=True)
 
+    time_start = time.time()
     for idx, data in enumerate(loader):
-        print("idx:", idx)
+        pass
+        # print("idx:", idx)
+    time_end = time.time()
+    print('load {} images cost time: {} sec'.format(len(dst), time_end-time_start))
+    print('load {} images {} fps'.format(len(dst), len(dst)*1.0/(time_end-time_start)))
+
+    local_path = os.path.join(os.path.expanduser('~/Data/CamVid'))
+    dst = camvidLoader(local_path, is_transform=False, is_augment=False)
+    loader = DataLoader(dst, batch_size=batch_size)
+    time_start = time.time()
+    for idx, data in enumerate(loader):
+        pass
+        # print("idx:", idx)
+    time_end = time.time()
+    print('load {} images cost time: {} sec'.format(len(dst), time_end-time_start))
+    print('load {} images {} fps'.format(len(dst), len(dst)*1.0/(time_end-time_start)))

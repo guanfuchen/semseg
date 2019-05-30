@@ -64,6 +64,8 @@ class camvidLoader(data.Dataset):
 
         if self.is_transform:
             img, lbl = self.transform(img, lbl)
+        img = torch.from_numpy(img).float()
+        lbl = torch.from_numpy(lbl).long()
 
         return img, lbl
 
@@ -76,8 +78,8 @@ class camvidLoader(data.Dataset):
         # HWC -> CHW
         img = img.transpose(2, 0, 1)
 
-        img = torch.from_numpy(img).float()
-        lbl = torch.from_numpy(lbl).long()
+        # img = torch.from_numpy(img).float()
+        # lbl = torch.from_numpy(lbl).long()
         return img, lbl
 
     def decode_segmap(self, temp, plot=False):
