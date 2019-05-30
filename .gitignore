@@ -7,3 +7,5 @@ model_vis.gv.pdf
 *.pt
 *.pth
 ppt/
+tmp.lmdb
+tmp.lmdb-lock

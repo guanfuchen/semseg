@@ -129,6 +129,7 @@ class camvidLoader(data.Dataset):
         else:
             return rgb
 
+
 if __name__ == '__main__':
     HOME_PATH = os.path.expanduser('~')
     local_path = os.path.join(HOME_PATH, 'Data/CamVid')
