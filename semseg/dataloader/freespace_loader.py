@@ -83,6 +83,11 @@ class freespaceLoader(data.Dataset):
         img = Image.open(img_path)
         lbl = Image.open(lbl_path)
 
+        # lbl = np.array(lbl)
+        # lbl[lbl==2] = 1
+        # print(np.unique(lbl))
+        # cv2.imwrite(lbl_path, lbl)
+
         if self.is_augment:
             if self.joint_augment_transform is not None:
                 img, lbl = self.joint_augment_transform(img, lbl)
@@ -140,11 +145,12 @@ class freespaceLoader(data.Dataset):
 
 if __name__ == '__main__':
     HOME_PATH = os.path.expanduser('~')
-    local_path = os.path.join(HOME_PATH, 'Data/FreeSpaceDataset')
+    local_path = os.path.join(HOME_PATH, 'Data/FreeSpacePredDataset')
     batch_size = 1
-    dst = freespaceLoader(local_path, is_transform=True, is_augment=False)
+    dst = freespaceLoader(local_path, is_transform=True, is_augment=False, split="train")
     trainloader = data.DataLoader(dst, batch_size=batch_size, shuffle=False)
     for i, (imgs, labels) in enumerate(trainloader):
+        pass
         # print(i)
         # print(imgs.shape)
         # print(labels.shape)

@@ -58,12 +58,11 @@ class freespacepredLoader(data.Dataset):
         file_list.sort()
         self.files[split] = file_list
 
-        if self.split == 'train':
-            self.input_shape = (64, 64)
-            # self.input_shape = (128, 256)
-        elif self.split == 'val':
-            self.input_shape = (128, 256)
-            # self.input_shape = (64, 64)
+        self.input_shape = (64, 64)
+        # if self.split == 'train':
+        #     self.input_shape = (64, 64)
+        # elif self.split == 'test':
+        #     self.input_shape = (64, 64)
 
     def get_filename(self, index):
         return self.files[self.split][index]
@@ -162,7 +161,7 @@ class freespacepredLoader(data.Dataset):
 
 if __name__ == '__main__':
     HOME_PATH = os.path.expanduser('~')
-    local_path = os.path.join(HOME_PATH, 'Data/FreeSpaceDataset')
+    local_path = os.path.join(HOME_PATH, 'Data/FreeSpacePredDataset')
     batch_size = 1
     dst = freespacepredLoader(local_path, is_transform=True, is_augment=False)
     trainloader = data.DataLoader(dst, batch_size=batch_size, shuffle=False)

@@ -13,6 +13,7 @@ from scipy import misc
 from semseg.dataloader.camvid_loader import camvidLoader
 from semseg.dataloader.cityscapes_loader import cityscapesLoader
 from semseg.dataloader.freespace_loader import freespaceLoader
+from semseg.dataloader.freespacepred_loader import freespacepredLoader
 from semseg.dataloader.movingmnist_loader import movingmnistLoader
 from semseg.dataloader.segmpred_loader import segmpredLoader
 from semseg.loss import cross_entropy2d
@@ -45,16 +46,13 @@ def validate(args):
         vis = visdom.Visdom()
 
     local_path = os.path.expanduser(args.dataset_path)
-    if args.dataset == 'CamVid':
-        dst = camvidLoader(local_path, is_transform=True, split=args.dataset_type)
-    elif args.dataset == 'CityScapes':
-        dst = cityscapesLoader(local_path, is_transform=True, split=args.dataset_type)
-    elif args.dataset == 'SegmPred':
+    if args.dataset == 'SegmPred':
         dst = segmpredLoader(local_path, is_transform=True, split=args.dataset_type)
     elif args.dataset == 'MovingMNIST':
         dst = movingmnistLoader(local_path, is_transform=True, split=args.dataset_type)
-    elif args.dataset == 'FreeSpace':
-        dst = freespaceLoader(local_path, is_transform=True, split=args.dataset_type)
+    elif args.dataset == 'FreeSpacePred':
+        input_channel = 1
+        dst = freespacepredLoader(local_path, is_transform=True, split=args.dataset_type)
     else:
         pass
     val_loader = torch.utils.data.DataLoader(dst, batch_size=1, shuffle=False)
@@ -65,7 +63,7 @@ def validate(args):
     else:
         # ---------------for testing SegmPred---------------
         try:
-            model = drnsegpred_a_18(n_classes=args.n_classes, pretrained=args.init_vgg16, input_shape=dst.input_shape)
+            model = eval(args.structure)(n_classes=args.n_classes, pretrained=args.init_vgg16, input_shape=dst.input_shape, input_channel=input_channel)
         except:
             print('missing structure or not support')
             exit(0)
@@ -87,7 +85,8 @@ def validate(args):
         # if i==1:
         #     break
         img_path = dst.files[args.dataset_type][i]
-        img_name = img_path[img_path.rfind('/')+1:]
+        img_name = img_path[img_path.rfind('/', 0, img_path.rfind('/'))+1:]
+        img_name = img_name.replace('/', '_')
         imgs_name.append(img_name)
         # print('img_path:', img_path)
         # print('img_name:', img_name)

@@ -10,7 +10,7 @@ if __name__ == '__main__':
     HOME_PATH = os.path.expanduser('~')
     local_path = os.path.join(HOME_PATH, 'Data/FreeSpaceDataset')
     batch_size = 1
-    dst = freespaceLoader(local_path, is_transform=True, is_augment=False)
+    dst = freespaceLoader(local_path, is_transform=True, is_augment=False, split='train')
     dst_len = len(dst)
     dst_ids = range(dst_len)
     random.shuffle(dst_ids)

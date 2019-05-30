@@ -82,7 +82,7 @@ def train(args):
     elif args.dataset == 'FreeSpacePred':
         input_channel = 1
         train_dst = freespacepredLoader(local_path, is_transform=True, split='train')
-        val_dst = freespacepredLoader(local_path, is_transform=True, split='val')
+        val_dst = freespacepredLoader(local_path, is_transform=True, split='test')
     else:
         print('{} dataset does not implement'.format(args.dataset))
         exit(0)
