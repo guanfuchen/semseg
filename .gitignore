@@ -9,3 +9,4 @@ model_vis.gv.pdf
 ppt/
 tmp.lmdb
 tmp.lmdb-lock
+*.tfrecords
