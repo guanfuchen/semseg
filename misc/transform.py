@@ -108,24 +108,24 @@ def randomCropLetterboxCv(img):
 
 
 if __name__ == '__main__':
-    # test_num = 1
+    # test_num = 10
+    # img = Image.open('../data/0006R0_f00930.png')
     # start_time = time.time()
     # for _ in range(test_num):
-    #     img = Image.open('../data/0006R0_f00930.png')
     #     out_img = randomCropLetterboxPil(img)
     #     plt.imshow(out_img)
     #     plt.show()
     # end_time = time.time()
     # print('cost time:', (end_time-start_time)/test_num)
 
-    test_num = 100
+    test_num = 1000
     img = cv2.imread('../data/0006R0_f00930.png')
-    img = cv2.resize(img, (1024, 720), interpolation=cv2.INTER_CUBIC)
+    # img = cv2.resize(img, (1024, 720), interpolation=cv2.INTER_CUBIC)
     print('img.shape:', img.shape)
     start_time = time.time()
     for _ in range(test_num):
         out_img = randomCropLetterboxCv(img)
-        # cv2.imshow('img', out_img)
-        # cv2.waitKey(0)
+        cv2.imshow('img', out_img)
+        cv2.waitKey(0)
     end_time = time.time()
     print('cost time:', (end_time-start_time)/test_num)
